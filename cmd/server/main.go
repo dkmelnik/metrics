@@ -7,6 +7,7 @@ import (
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	log.Println("server is running!")
 
 	if err := run(); err != nil {
 		log.Fatal(err)

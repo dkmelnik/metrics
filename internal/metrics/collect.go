@@ -43,9 +43,6 @@ func Collect(md *models.Metrics) {
 			NumGC:         m.NumGC,
 			NumForcedGC:   m.NumForcedGC,
 			GCCPUFraction: m.GCCPUFraction,
-			EnableGC:      m.EnableGC,
-			DebugGC:       m.DebugGC,
-			BySize:        m.BySize,
 			PollCount:     pollCount,
 			RandomValue:   utils.GenerateGuid(),
 		}
