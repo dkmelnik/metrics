@@ -1,7 +1,24 @@
 package main
 
-import "log"
+import (
+	"github.com/dkmelnik/metrics/internal/server"
+	"log"
+)
 
 func main() {
-	log.Println("server is running!")
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
+	s := server.NewServer(":8080")
+
+	if err := s.Run(); err != nil {
+		return err
+	}
+
+	return nil
 }
