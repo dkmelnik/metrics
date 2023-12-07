@@ -1,4 +1,4 @@
-FROM golang:1.21.3 AS debug
+FROM golang:1.21.5-bookworm AS debug
 
 WORKDIR /app
 
@@ -7,7 +7,7 @@ RUN curl -sSfL https://raw.githubusercontent.com/cosmtrek/air/master/install.sh 
 
 CMD ["sh", "-c", "air --build.cmd 'go build -o bin/server cmd/server/main.go' --build.bin './bin/server'"]
 
-FROM golang:1.21.3 AS build
+FROM golang:1.21.5-alpine3.17 AS build
 
 WORKDIR /app
 
@@ -15,10 +15,32 @@ COPY . .
 
 RUN go build -o bin/server cmd/server/main.go
 
-FROM golang:1.21.3 AS production
+FROM golang:1.21.5-alpine3.17 AS production
 
 WORKDIR /app
 
 COPY --from=build /app/bin/server ./main
 
 CMD [ "./main" ]
+
+
+FROM golang:1.21.5-alpine3.17 AS build-tests
+
+WORKDIR /app
+
+COPY . .
+
+RUN go build -o bin/server cmd/server/main.go
+
+FROM --platform=linux/amd64 golang:1.21.3 AS tests
+
+WORKDIR /app
+
+COPY --from=build-tests /app/bin/server ./main
+
+COPY /local-tests/metricstest /usr/local/bin/metricstest
+
+RUN chmod +x /usr/local/bin/metricstest
+
+CMD ["metricstest", "-test.v", "-test.run=^TestIteration1$", "-binary-path=/app/main"]
+

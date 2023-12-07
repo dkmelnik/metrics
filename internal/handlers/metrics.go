@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/dkmelnik/metrics/internal/handlers/interfaces"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -23,7 +24,7 @@ func (h *Handler) Create(rw http.ResponseWriter, r *http.Request) {
 
 	parts := strings.Split(r.URL.Path, "/")
 	if len(parts) != 5 {
-		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		http.Error(rw, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
@@ -31,7 +32,23 @@ func (h *Handler) Create(rw http.ResponseWriter, r *http.Request) {
 	metricsName := parts[3]
 	metricsVal := parts[4]
 
-	fmt.Printf("Тип метрики: %s, Имя метрики: %s, Значение метрики: %s\n", metricsType, metricsName, metricsVal)
+	if metricsType == "gauge" {
+		_, err := strconv.ParseFloat(metricsVal, 64)
+		if err != nil {
+			http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+	}
+
+	if metricsType == "counter" {
+		_, err := strconv.ParseInt(metricsVal, 10, 64)
+		if err != nil {
+			http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+	}
+
+	fmt.Printf("Тип метрики: %s, Имя метрики: %s, Значение метрики: %f\n", metricsType, metricsName, metricsVal)
 
 	rw.WriteHeader(http.StatusOK)
 	fmt.Fprintf(rw, http.StatusText(http.StatusOK))

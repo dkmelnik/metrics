@@ -13,7 +13,15 @@ logs.server:
 up.prod:
 	docker-compose up --build -d
 
+tests.agent:
+	docker build -t metrics-agent-tests -f Docker/Dockerfile-agent --target=tests .
+	docker run --rm --name metrics-agent-tests-container metrics-agent-tests
+	#docker run --rm -it --name metrics-agent-tests-container metrics-agent-tests bash
 
+tests.server:
+	docker build -t metrics-server-tests -f Docker/Dockerfile-server --target=tests .
+	docker run --rm --name metrics-server-tests-container metrics-server-tests
+	#docker run --rm -it --name metrics-server-tests-container metrics-server-tests bash
 
 
 
