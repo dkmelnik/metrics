@@ -49,6 +49,7 @@ func (h *Handler) Create(rw http.ResponseWriter, r *http.Request) {
 
 	fmt.Printf("Тип метрики: %s, Имя метрики: %s, Значение метрики: %s\n", metricsType, metricsName, metricsVal)
 
+	rw.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	rw.WriteHeader(http.StatusOK)
 	fmt.Fprintf(rw, http.StatusText(http.StatusOK))
 }

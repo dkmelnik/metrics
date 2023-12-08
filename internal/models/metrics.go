@@ -57,3 +57,16 @@ func (m Metrics) HasType(tag string) bool {
 	}
 	return false
 }
+
+func (m Metrics) GetProperties() []string {
+	metricsType := reflect.TypeOf(m)
+
+	var properties []string
+
+	for i := 0; i < metricsType.NumField(); i++ {
+		field := metricsType.Field(i)
+		properties = append(properties, field.Name)
+	}
+
+	return properties
+}

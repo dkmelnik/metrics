@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/dkmelnik/metrics/internal/models"
 	"github.com/stretchr/testify/assert"
+	"log"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
@@ -17,6 +18,7 @@ func TestSend(t *testing.T) {
 	metricsNames := make([]string, 0)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Println(r.URL.Path)
 		parts := strings.Split(r.URL.Path, "/")
 		metricsNames = append(metricsNames, parts[3])
 		w.WriteHeader(http.StatusOK)
@@ -71,11 +73,17 @@ func TestSend(t *testing.T) {
 
 	time.Sleep(time.Millisecond * 98)
 
-	for _, test := range metricsNames {
-		assert.True(t, md.HasProperty(test), "each of the metrics must be sent")
-	}
+	assert.ElementsMatch(t, md.GetProperties(), metricsNames, "each of the metrics must be sent")
 }
 
 func TestBuildRequestURL(t *testing.T) {
+	serverURL := "http://example.com"
+	tag := "gauge"
+	fieldName := "Alloc"
+	value := "243288"
 
+	expectedURL := "http://example.com/update/gauge/Alloc/243288"
+	result := buildRequestURL(serverURL, tag, fieldName, value)
+
+	assert.Equal(t, expectedURL, result)
 }
