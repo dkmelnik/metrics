@@ -37,7 +37,7 @@ func (s *Server) shutdown() error {
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGTSTP)
 
 	<-quit
-
+	
 	ctx, clFunc := context.WithTimeout(context.Background(), 2*time.Second)
 	defer clFunc()
 
