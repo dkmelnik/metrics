@@ -3,35 +3,35 @@ package models
 import "reflect"
 
 type Metrics struct {
-	Alloc         uint64  `metric:"gauge"`
-	TotalAlloc    uint64  `metric:"gauge"`
-	Sys           uint64  `metric:"gauge"`
-	Lookups       uint64  `metric:"gauge"`
-	Mallocs       uint64  `metric:"gauge"`
-	Frees         uint64  `metric:"gauge"`
-	HeapAlloc     uint64  `metric:"gauge"`
-	HeapSys       uint64  `metric:"gauge"`
-	HeapIdle      uint64  `metric:"gauge"`
-	HeapInuse     uint64  `metric:"gauge"`
-	HeapReleased  uint64  `metric:"gauge"`
-	HeapObjects   uint64  `metric:"gauge"`
-	StackInuse    uint64  `metric:"gauge"`
-	StackSys      uint64  `metric:"gauge"`
-	MSpanInuse    uint64  `metric:"gauge"`
-	MSpanSys      uint64  `metric:"gauge"`
-	MCacheInuse   uint64  `metric:"gauge"`
-	MCacheSys     uint64  `metric:"gauge"`
-	BuckHashSys   uint64  `metric:"gauge"`
-	GCSys         uint64  `metric:"gauge"`
-	OtherSys      uint64  `metric:"gauge"`
-	NextGC        uint64  `metric:"gauge"`
-	LastGC        uint64  `metric:"gauge"`
-	PauseTotalNs  uint64  `metric:"gauge"`
-	NumGC         uint32  `metric:"gauge"`
-	NumForcedGC   uint32  `metric:"gauge"`
+	Alloc         float64 `metric:"gauge"`
+	TotalAlloc    float64 `metric:"gauge"`
+	Sys           float64 `metric:"gauge"`
+	Lookups       float64 `metric:"gauge"`
+	Mallocs       float64 `metric:"gauge"`
+	Frees         float64 `metric:"gauge"`
+	HeapAlloc     float64 `metric:"gauge"`
+	HeapSys       float64 `metric:"gauge"`
+	HeapIdle      float64 `metric:"gauge"`
+	HeapInuse     float64 `metric:"gauge"`
+	HeapReleased  float64 `metric:"gauge"`
+	HeapObjects   float64 `metric:"gauge"`
+	StackInuse    float64 `metric:"gauge"`
+	StackSys      float64 `metric:"gauge"`
+	MSpanInuse    float64 `metric:"gauge"`
+	MSpanSys      float64 `metric:"gauge"`
+	MCacheInuse   float64 `metric:"gauge"`
+	MCacheSys     float64 `metric:"gauge"`
+	BuckHashSys   float64 `metric:"gauge"`
+	GCSys         float64 `metric:"gauge"`
+	OtherSys      float64 `metric:"gauge"`
+	NextGC        float64 `metric:"gauge"`
+	LastGC        float64 `metric:"gauge"`
+	PauseTotalNs  float64 `metric:"gauge"`
+	NumGC         float64 `metric:"gauge"`
+	NumForcedGC   float64 `metric:"gauge"`
 	GCCPUFraction float64 `metric:"gauge"`
 	PollCount     int     `metric:"counter"`
-	RandomValue   string  `metric:"gauge"`
+	RandomValue   float64 `metric:"gauge"`
 }
 
 func (m Metrics) HasProperty(prop string) bool {

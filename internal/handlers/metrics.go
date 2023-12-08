@@ -40,20 +40,11 @@ func (h *Handler) Create(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if metricsType == "gauge" {
-		_, err := strconv.ParseFloat(metricsVal, 64)
-		if err != nil {
-			http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-			return
-		}
-	}
-
-	if metricsType == "counter" {
-		_, err := strconv.ParseInt(metricsVal, 10, 64)
-		if err != nil {
-			http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-			return
-		}
+	_, err := strconv.ParseFloat(metricsVal, 64)
+	_, err = strconv.ParseInt(metricsVal, 10, 64)
+	if err != nil {
+		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
 	}
 
 	fmt.Printf("Тип метрики: %s, Имя метрики: %s, Значение метрики: %s\n", metricsType, metricsName, metricsVal)
