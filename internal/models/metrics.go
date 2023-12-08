@@ -1,5 +1,7 @@
 package models
 
+import "reflect"
+
 type Metrics struct {
 	Alloc         uint64  `metric:"gauge"`
 	TotalAlloc    uint64  `metric:"gauge"`
@@ -30,4 +32,28 @@ type Metrics struct {
 	GCCPUFraction float64 `metric:"gauge"`
 	PollCount     int     `metric:"counter"`
 	RandomValue   string  `metric:"gauge"`
+}
+
+func (m Metrics) HasProperty(prop string) bool {
+	structValue := reflect.ValueOf(m)
+
+	for i := 0; i < structValue.NumField(); i++ {
+		field := structValue.Type().Field(i)
+		if field.Name == prop {
+			return true
+		}
+	}
+	return false
+}
+
+func (m Metrics) HasType(tag string) bool {
+	structType := reflect.TypeOf(m)
+
+	for i := 0; i < structType.NumField(); i++ {
+		field := structType.Field(i)
+		if field.Tag.Get("metric") == tag {
+			return true
+		}
+	}
+	return false
 }

@@ -22,5 +22,5 @@ func (s *Server) configureRouter() {
 	metricsHandler := handlers.NewHandler(store)
 
 	mux.HandleFunc("/update/", metricsHandler.Create)
-	mux.HandleFunc("/", metricsHandler.GetAll)
+	mux.HandleFunc("/get", metricsHandler.GetAll)
 }

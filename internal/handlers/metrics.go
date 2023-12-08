@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"github.com/dkmelnik/metrics/internal/handlers/interfaces"
+	"github.com/dkmelnik/metrics/internal/models"
 	"net/http"
 	"strconv"
 	"strings"
@@ -32,6 +33,13 @@ func (h *Handler) Create(rw http.ResponseWriter, r *http.Request) {
 	metricsName := parts[3]
 	metricsVal := parts[4]
 
+	m := models.Metrics{}
+
+	if !m.HasType(metricsType) {
+		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
 	if metricsType == "gauge" {
 		_, err := strconv.ParseFloat(metricsVal, 64)
 		if err != nil {
@@ -48,7 +56,7 @@ func (h *Handler) Create(rw http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	fmt.Printf("Тип метрики: %s, Имя метрики: %s, Значение метрики: %f\n", metricsType, metricsName, metricsVal)
+	fmt.Printf("Тип метрики: %s, Имя метрики: %s, Значение метрики: %s\n", metricsType, metricsName, metricsVal)
 
 	rw.WriteHeader(http.StatusOK)
 	fmt.Fprintf(rw, http.StatusText(http.StatusOK))
