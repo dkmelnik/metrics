@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/dkmelnik/metrics/internal/handlers"
 	"github.com/dkmelnik/metrics/internal/server"
 	"log"
 )
@@ -15,7 +16,8 @@ func main() {
 }
 
 func run() error {
-	s := server.NewServer(":8080")
+	r := handlers.ConfigureRouter()
+	s := server.NewServer(":8080", r)
 
 	if err := s.Run(); err != nil {
 		return err

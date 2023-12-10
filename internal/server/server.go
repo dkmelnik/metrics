@@ -13,18 +13,17 @@ type Server struct {
 	app *http.Server
 }
 
-func NewServer(addr string) *Server {
+func NewServer(addr string, r http.Handler) *Server {
 	return &Server{app: &http.Server{
 		Addr:         addr,
 		ReadTimeout:  time.Second * 30,
+		Handler:      r,
 		WriteTimeout: time.Second * 30,
 	}}
 }
 
 func (s *Server) Run() error {
 	go s.shutdown()
-
-	s.configureRouter()
 
 	return s.app.ListenAndServe()
 }
@@ -37,7 +36,7 @@ func (s *Server) shutdown() error {
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGTSTP)
 
 	<-quit
-	
+
 	ctx, clFunc := context.WithTimeout(context.Background(), 2*time.Second)
 	defer clFunc()
 

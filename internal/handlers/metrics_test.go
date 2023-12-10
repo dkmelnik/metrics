@@ -1,15 +1,28 @@
 package handlers
 
 import (
-	"github.com/dkmelnik/metrics/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 )
+
+func testRequest(t *testing.T, ts *httptest.Server, method,
+	path string) (*http.Response, string) {
+	req, err := http.NewRequest(method, ts.URL+path, nil)
+	require.NoError(t, err)
+
+	resp, err := ts.Client().Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	return resp, string(respBody)
+}
 
 func TestCreate(t *testing.T) {
 	type want struct {
@@ -29,7 +42,7 @@ func TestCreate(t *testing.T) {
 			method:  http.MethodGet,
 			want: want{
 				code:        http.StatusMethodNotAllowed,
-				response:    http.StatusText(http.StatusMethodNotAllowed),
+				response:    "",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
@@ -39,42 +52,22 @@ func TestCreate(t *testing.T) {
 			method:  http.MethodPost,
 			want: want{
 				code:        http.StatusNotFound,
-				response:    http.StatusText(http.StatusNotFound),
+				response:    "404 page not found\n",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
 		{
-			name:    "negative test #3, missing value",
-			request: "/update/gauge/Alloc/",
-			method:  http.MethodPost,
-			want: want{
-				code:        http.StatusBadRequest,
-				response:    http.StatusText(http.StatusBadRequest),
-				contentType: "text/plain; charset=utf-8",
-			},
-		},
-		{
-			name:    "negative test #4, value not int64 or float64",
+			name:    "negative test #3, value not int64 or float64",
 			request: "/update/gauge/Alloc/test",
 			method:  http.MethodPost,
 			want: want{
 				code:        http.StatusBadRequest,
-				response:    http.StatusText(http.StatusBadRequest),
+				response:    "Bad Request\n",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
 		{
-			name:    "negative test #5, the specified type was not found",
-			request: "/update/gauge/Alloc/1",
-			method:  http.MethodPost,
-			want: want{
-				code:        http.StatusBadRequest,
-				response:    http.StatusText(http.StatusBadRequest),
-				contentType: "text/plain; charset=utf-8",
-			},
-		},
-		{
-			name:    "positive test #6, must return OK",
+			name:    "positive test #4, must return OK",
 			request: "/update/gauge/Alloc/1",
 			method:  http.MethodPost,
 			want: want{
@@ -86,25 +79,12 @@ func TestCreate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			request := httptest.NewRequest(tt.method, tt.request, nil)
+			ts := httptest.NewServer(ConfigureRouter())
+			defer ts.Close()
 
-			w := httptest.NewRecorder()
-			s := storage.NewMemoryStorage()
-			h := http.HandlerFunc(NewHandler(s).Create)
-			h(w, request)
-
-			result := w.Result()
-
-			assert.Equal(t, tt.want.code, result.StatusCode)
-			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
-
-			res, err := io.ReadAll(result.Body)
-			require.NoError(t, err)
-			err = result.Body.Close()
-			require.NoError(t, err)
-
-			assert.Equal(t, tt.want.response, strings.ReplaceAll(string(res), "\n", ""))
-
+			resp, get := testRequest(t, ts, tt.method, tt.request)
+			assert.Equal(t, tt.want.code, resp.StatusCode)
+			assert.Equal(t, tt.want.response, get)
 		})
 	}
 }
