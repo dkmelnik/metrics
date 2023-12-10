@@ -20,21 +20,25 @@ func Send(ctx context.Context, t *time.Ticker, md *models.Metrics, serverURL str
 			if md == nil {
 				continue
 			}
-			metricType := reflect.TypeOf(*md)
-			metricValue := reflect.ValueOf(*md)
+			loopMetricsAndSend(md, serverURL)
+		}
+	}
+}
 
-			for i := 0; i < metricType.NumField(); i++ {
-				field := metricType.Field(i)
-				value := metricValue.Field(i)
+func loopMetricsAndSend(md *models.Metrics, serverURL string) {
+	metricType := reflect.TypeOf(*md)
+	metricValue := reflect.ValueOf(*md)
 
-				tag := field.Tag.Get("metric")
-				if tag != "" {
-					reqURL := buildRequestURL(serverURL, tag, field.Name, convertToString(value))
-					_, err := makeRequest(reqURL)
-					if err != nil {
-						log.Println(err)
-					}
-				}
+	for i := 0; i < metricType.NumField(); i++ {
+		field := metricType.Field(i)
+		value := metricValue.Field(i)
+
+		tag := field.Tag.Get("metric")
+		if tag != "" {
+			reqURL := buildRequestURL(serverURL, tag, field.Name, convertToString(value))
+			_, err := makeRequest(reqURL)
+			if err != nil {
+				log.Println(err)
 			}
 		}
 	}

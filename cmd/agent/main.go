@@ -13,13 +13,16 @@ func main() {
 
 	md := &models.Metrics{}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	collectPeriod := time.NewTicker(time.Second * 2)
 	defer collectPeriod.Stop()
-	go metrics.Collect(context.Background(), collectPeriod, md)
+	go metrics.Collect(ctx, collectPeriod, md)
 
 	sendPeriod := time.NewTicker(time.Second * 10)
 	defer sendPeriod.Stop()
-	go metrics.Send(context.Background(), sendPeriod, md, "http://server:8080")
+	go metrics.Send(ctx, sendPeriod, md, "http://server:8080")
 
 	done := make(chan struct{})
 	<-done

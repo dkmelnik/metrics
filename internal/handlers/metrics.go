@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type Handler struct {
@@ -50,7 +51,11 @@ func (h *Handler) Get(rw http.ResponseWriter, r *http.Request) {
 	log.Println(metricsType, metricsName)
 	metric, err := h.storage.FindOneByTypeName(metricsType, metricsName)
 	if err != nil {
-		http.Error(rw, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(rw, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 	rw.Header().Set("Content-Type", "text/plain; charset=utf-8")
