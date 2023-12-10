@@ -5,7 +5,6 @@ import (
 	"github.com/dkmelnik/metrics/internal/handlers/interfaces"
 	"github.com/dkmelnik/metrics/internal/models"
 	"github.com/go-chi/chi/v5"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -48,7 +47,6 @@ func (h *Handler) Create(rw http.ResponseWriter, r *http.Request) {
 func (h *Handler) Get(rw http.ResponseWriter, r *http.Request) {
 	metricsType := chi.URLParam(r, "type")
 	metricsName := chi.URLParam(r, "name")
-	log.Println(metricsType, metricsName)
 	metric, err := h.storage.FindOneByTypeName(metricsType, metricsName)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {

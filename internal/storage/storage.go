@@ -30,10 +30,9 @@ func (ms *MemoryStorage) FindOneByTypeName(metricType, metricName string) (inter
 	ms.mu.RLock()
 	defer ms.mu.RUnlock()
 
-	if ms.metrics[metricType] == nil || ms.metrics[metricType][metricName] == 0 {
+	if ms.metrics[metricType] == nil || ms.metrics[metricType][metricName] == nil {
 		return 0, errors.New("metric not found")
 	}
-
 	return ms.metrics[metricType][metricName], nil
 }
 
