@@ -3,7 +3,7 @@ package server
 import (
 	"github.com/dkmelnik/metrics/internal/handlers"
 	"github.com/dkmelnik/metrics/internal/storage"
-	"net/http"
+	"github.com/go-chi/chi/v5"
 )
 
 type User struct {
@@ -13,14 +13,16 @@ type User struct {
 }
 
 func (s *Server) configureRouter() {
-	mux := http.NewServeMux()
-	s.app.Handler = mux
+	r := chi.NewRouter()
+
+	s.app.Handler = r
 
 	//infrastructure
-	store := storage.NewCollection()
+	store := storage.NewMemoryStorage()
 	//metrics
 	metricsHandler := handlers.NewHandler(store)
 
-	mux.HandleFunc("/update/", metricsHandler.Create)
-	mux.HandleFunc("/get", metricsHandler.GetAll)
+	r.Post("/update/{type}/{name}/{value}", metricsHandler.Create)
+	r.Get("/value/{type}/{name}", metricsHandler.Get)
+	r.Get("/", metricsHandler.GetAll)
 }

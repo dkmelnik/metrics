@@ -65,7 +65,7 @@ func TestCreate(t *testing.T) {
 		},
 		{
 			name:    "negative test #5, the specified type was not found",
-			request: "/update/test/Alloc/1",
+			request: "/update/gauge/Alloc/1",
 			method:  http.MethodPost,
 			want: want{
 				code:        http.StatusBadRequest,
@@ -89,7 +89,7 @@ func TestCreate(t *testing.T) {
 			request := httptest.NewRequest(tt.method, tt.request, nil)
 
 			w := httptest.NewRecorder()
-			s := storage.NewCollection()
+			s := storage.NewMemoryStorage()
 			h := http.HandlerFunc(NewHandler(s).Create)
 			h(w, request)
 
@@ -97,7 +97,6 @@ func TestCreate(t *testing.T) {
 
 			assert.Equal(t, tt.want.code, result.StatusCode)
 			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
-			//assert.Equal(t, tt.want.response, result.Body)
 
 			res, err := io.ReadAll(result.Body)
 			require.NoError(t, err)

@@ -1,6 +1,7 @@
 package interfaces
 
 type Storage interface {
-	Save()
-	Find()
+	Save(metricType, metricName string, value interface{})
+	FindOneByTypeName(metricType, metricName string) (interface{}, error)
+	GetAllMetrics() map[string]map[string]interface{}
 }

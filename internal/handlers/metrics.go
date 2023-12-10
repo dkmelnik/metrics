@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"github.com/dkmelnik/metrics/internal/handlers/interfaces"
 	"github.com/dkmelnik/metrics/internal/models"
+	"github.com/go-chi/chi/v5"
+	"log"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
 type Handler struct {
@@ -18,20 +19,9 @@ func NewHandler(s interfaces.Storage) *Handler {
 }
 
 func (h *Handler) Create(rw http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(rw, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-		return
-	}
-
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) != 5 {
-		http.Error(rw, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
-
-	metricsType := parts[2]
-	metricsName := parts[3]
-	metricsVal := parts[4]
+	metricsType := chi.URLParam(r, "type")
+	metricsName := chi.URLParam(r, "name")
+	metricsVal := chi.URLParam(r, "value")
 
 	m := models.Metrics{}
 
@@ -47,16 +37,47 @@ func (h *Handler) Create(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("Тип метрики: %s, Имя метрики: %s, Значение метрики: %s\n", metricsType, metricsName, metricsVal)
+	h.storage.Save(metricsType, metricsName, metricsVal)
 
 	rw.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	rw.WriteHeader(http.StatusOK)
 	fmt.Fprintf(rw, http.StatusText(http.StatusOK))
 }
 
+func (h *Handler) Get(rw http.ResponseWriter, r *http.Request) {
+	metricsType := chi.URLParam(r, "type")
+	metricsName := chi.URLParam(r, "name")
+	log.Println(metricsType, metricsName)
+	metric, err := h.storage.FindOneByTypeName(metricsType, metricsName)
+	if err != nil {
+		http.Error(rw, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+	rw.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	rw.WriteHeader(http.StatusOK)
+	fmt.Fprintf(rw, "%s", metric)
+}
+
 func (h *Handler) GetAll(rw http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(rw, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+	metrics := h.storage.GetAllMetrics()
+
+	html := "<html><head><title>Metric Values</title></head><body><h1>Metric Values:</h1><ul>"
+
+	for metricName, values := range metrics {
+		html += fmt.Sprintf("<li><strong>%s</strong>: <ul>", metricName)
+		for key, value := range values {
+			html += fmt.Sprintf("<li>%s: %v</li>", key, value)
+		}
+		html += "</ul></li>"
+	}
+
+	html += "</ul></body></html>"
+
+	rw.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	_, err := rw.Write([]byte(html))
+	if err != nil {
+		http.Error(rw, "Failed to write response", http.StatusInternalServerError)
 		return
 	}
 }
