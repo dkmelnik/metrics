@@ -2,8 +2,7 @@ package main
 
 import (
 	"context"
-	"errors"
-	"flag"
+	"github.com/dkmelnik/metrics/configs"
 	"github.com/dkmelnik/metrics/internal/metrics"
 	"github.com/dkmelnik/metrics/internal/models"
 	"log"
@@ -11,6 +10,7 @@ import (
 )
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	log.Println("agent is running!")
 
 	if err := run(); err != nil {
@@ -18,44 +18,25 @@ func main() {
 	}
 }
 
-type Config struct {
-	addr                         string
-	reportInterval, pollInterval int
-}
-
-func flags() (Config, error) {
-	c := Config{}
-	flag.StringVar(&c.addr, "a", "server:8080", "server by collected metric address ")
-
-	flag.IntVar(&c.reportInterval, "r", 10, "frequency of sending metrics to the server")
-	flag.IntVar(&c.pollInterval, "p", 2, "metrics polling frequency")
-
-	flag.Parse()
-
-	if len(flag.Args()) > 0 {
-		return c, errors.New("unknown flags or parameters")
-	}
-	return c, nil
-}
-
 func run() error {
-	c, err := flags()
-	if err != nil {
+	if err := configs.CheckUnknownFlags(); err != nil {
 		return err
 	}
+
+	c := configs.NewAgent().Build()
 
 	md := &models.Metrics{}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	collectPeriod := time.NewTicker(time.Second * time.Duration(c.pollInterval))
+	collectPeriod := time.NewTicker(time.Second * time.Duration(c.PollInterval))
 	defer collectPeriod.Stop()
 	go metrics.Collect(ctx, collectPeriod, md)
 
-	sendPeriod := time.NewTicker(time.Second * time.Duration(c.reportInterval))
+	sendPeriod := time.NewTicker(time.Second * time.Duration(c.ReportInterval))
 	defer sendPeriod.Stop()
-	go metrics.Send(ctx, sendPeriod, md, c.addr)
+	go metrics.Send(ctx, sendPeriod, md, c.Addr)
 
 	done := make(chan struct{})
 	<-done

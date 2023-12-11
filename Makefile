@@ -30,5 +30,7 @@ tests.server:
 run.server:
 	docker-compose run --rm --build server sh
 
+run.agent:
+	docker-compose run --rm --build server sh
 
 
