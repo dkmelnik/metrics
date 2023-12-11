@@ -6,7 +6,7 @@ import (
 )
 
 func TestGenerateGuid(t *testing.T) {
-	guid := GenerateGuid()
+	guid := GenerateGUID()
 
 	assert.NotEmpty(t, guid, "Generated GUID should not be empty")
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func GenerateGuid() string {
+func GenerateGUID() string {
 	b := make([]byte, 16)
 	_, _ = rand.Read(b)
 	uuid := fmt.Sprintf("%x-%x-%x-%x-%x",
