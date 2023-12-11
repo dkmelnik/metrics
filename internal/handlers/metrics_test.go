@@ -83,6 +83,8 @@ func TestCreate(t *testing.T) {
 			defer ts.Close()
 
 			resp, get := testRequest(t, ts, tt.method, tt.request)
+			defer resp.Body.Close()
+
 			assert.Equal(t, tt.want.code, resp.StatusCode)
 			assert.Equal(t, tt.want.response, get)
 		})

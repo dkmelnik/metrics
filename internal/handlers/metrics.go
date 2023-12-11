@@ -31,6 +31,10 @@ func (h *Handler) Create(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err := strconv.ParseFloat(metricsVal, 64)
+	if err != nil {
+		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
 	_, err = strconv.ParseInt(metricsVal, 10, 64)
 	if err != nil {
 		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -41,7 +45,7 @@ func (h *Handler) Create(rw http.ResponseWriter, r *http.Request) {
 
 	rw.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	rw.WriteHeader(http.StatusOK)
-	fmt.Fprintf(rw, http.StatusText(http.StatusOK))
+	fmt.Fprint(rw, http.StatusText(http.StatusOK))
 }
 
 func (h *Handler) Get(rw http.ResponseWriter, r *http.Request) {
