@@ -16,7 +16,7 @@ func NewAgent() Agent {
 }
 
 func (cb Agent) Build() Agent {
-	flag.StringVar(&cb.Addr, "a", "server:8080", "server by collected metric address ")
+	flag.StringVar(&cb.Addr, "a", "localhost:8080", "server by collected metric address ")
 	flag.IntVar(&cb.ReportInterval, "r", 10, "frequency of sending metrics to the server")
 	flag.IntVar(&cb.PollInterval, "p", 2, "frequency of sending metrics to the server")
 	flag.Parse()
