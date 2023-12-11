@@ -42,5 +42,5 @@ COPY /local-tests/metricstest /usr/local/bin/metricstest
 
 RUN chmod +x /usr/local/bin/metricstest
 
-CMD ["metricstest", "-test.v", "-test.run=^TestIteration1$", "-binary-path=/app/main", "-a=:8080"]
+CMD ["metricstest", "-test.v", "-test.run=^TestIteration1$", "-binary-path=/app/main"]
 
