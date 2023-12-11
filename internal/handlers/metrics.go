@@ -5,6 +5,7 @@ import (
 	"github.com/dkmelnik/metrics/internal/handlers/interfaces"
 	"github.com/dkmelnik/metrics/internal/models"
 	"github.com/go-chi/chi/v5"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -42,6 +43,8 @@ func (h *Handler) Create(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	h.storage.Save(metricsType, metricsName, metricsVal)
+
+	log.Printf("type:%s, name:%s, val:%s", metricsType, metricsName, metricsVal)
 
 	rw.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	rw.WriteHeader(http.StatusOK)

@@ -13,6 +13,9 @@ logs.server:
 up.prod:
 	docker-compose up --build -d
 
+up.prod.server:
+	docker-compose up server --build
+
 restart:
 	docker-compose stop
 	make up.prod
