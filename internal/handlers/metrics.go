@@ -5,7 +5,6 @@ import (
 	"github.com/dkmelnik/metrics/internal/handlers/interfaces"
 	"github.com/dkmelnik/metrics/internal/models"
 	"github.com/go-chi/chi/v5"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -24,31 +23,41 @@ func (h *Handler) Create(rw http.ResponseWriter, r *http.Request) {
 	metricsName := chi.URLParam(r, "name")
 	metricsVal := chi.URLParam(r, "value")
 
-	m := models.Metrics{}
-
-	if !m.HasType(metricsType) {
-		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+	if metricsType == string(models.Counter) {
+		intVal, err := strconv.ParseInt(metricsVal, 10, 64)
+		if err != nil {
+			http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+		prev, err := h.storage.FindOneByTypeName(string(models.Counter), metricsName)
+		if err != nil {
+			h.storage.Save(metricsType, metricsName, intVal)
+		} else {
+			i := prev.(int64)
+			h.storage.Save(metricsType, metricsName, intVal+i)
+		}
+		rw.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		rw.WriteHeader(http.StatusOK)
+		fmt.Fprint(rw, http.StatusText(http.StatusOK))
 		return
 	}
 
-	_, err := strconv.ParseFloat(metricsVal, 64)
-	if err != nil {
-		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+	if metricsType == string(models.Gauge) {
+		flVal, err := strconv.ParseFloat(metricsVal, 64)
+		if err != nil {
+			http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		h.storage.Save(metricsType, metricsName, flVal)
+		rw.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		rw.WriteHeader(http.StatusOK)
+		fmt.Fprint(rw, http.StatusText(http.StatusOK))
 		return
 	}
-	_, err = strconv.ParseInt(metricsVal, 10, 64)
-	if err != nil {
-		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
 
-	h.storage.Save(metricsType, metricsName, metricsVal)
-
-	log.Printf("type:%s, name:%s, val:%s", metricsType, metricsName, metricsVal)
-
-	rw.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	rw.WriteHeader(http.StatusOK)
-	fmt.Fprint(rw, http.StatusText(http.StatusOK))
+	http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+	return
 }
 
 func (h *Handler) Get(rw http.ResponseWriter, r *http.Request) {
@@ -65,7 +74,7 @@ func (h *Handler) Get(rw http.ResponseWriter, r *http.Request) {
 	}
 	rw.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	rw.WriteHeader(http.StatusOK)
-	fmt.Fprintf(rw, "%s", metric)
+	fmt.Fprintf(rw, "%s", fmt.Sprintf("%v", metric))
 }
 
 func (h *Handler) GetAll(rw http.ResponseWriter, r *http.Request) {

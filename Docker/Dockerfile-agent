@@ -38,10 +38,10 @@ FROM --platform=linux/amd64 golang:1.21.3 AS tests
 WORKDIR /app
 
 COPY --from=build-tests /app/bin/agent ./agent
-COPY --from=build-tests /app/bin/agent ./server
+COPY --from=build-tests /app/bin/server ./server
 
 COPY /local-tests/metricstest /usr/local/bin/metricstest
 
 RUN chmod +x /usr/local/bin/metricstest
 
-CMD ["metricstest", "-test.v", "-test.run=^TestIteration4$", "-agent-binary-path=/app/agent", "-binary-path=/app/server", "-server-port=8080"]
+CMD ["metricstest", "-test.v", "-test.run=^TestIteration3[AB]*$", "-agent-binary-path=/app/agent", "-binary-path=/app/server", "-source-path=."]

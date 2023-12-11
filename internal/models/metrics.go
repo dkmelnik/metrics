@@ -2,6 +2,13 @@ package models
 
 import "reflect"
 
+type MetricType string
+
+var (
+	Gauge   MetricType = "gauge"
+	Counter MetricType = "counter"
+)
+
 type Metrics struct {
 	Alloc         float64 `metric:"gauge"`
 	TotalAlloc    float64 `metric:"gauge"`

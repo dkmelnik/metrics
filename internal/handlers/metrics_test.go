@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -68,7 +70,7 @@ func TestCreate(t *testing.T) {
 		},
 		{
 			name:    "positive test #4, must return OK",
-			request: "/update/gauge/Alloc/1",
+			request: "/update/gauge/Alloc/" + fmt.Sprint(rand.Intn(1024)),
 			method:  http.MethodPost,
 			want: want{
 				code:        http.StatusOK,

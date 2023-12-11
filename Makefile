@@ -22,8 +22,8 @@ restart:
 
 tests.agent:
 	docker build -t metrics-agent-tests -f Docker/Dockerfile-agent --target=tests .
-	docker run --rm --name metrics-agent-tests-container metrics-agent-tests
-	#docker run --rm -it --name metrics-agent-tests-container metrics-agent-tests bash
+	#docker run --rm --name metrics-agent-tests-container metrics-agent-tests
+	docker run --rm -it --name metrics-agent-tests-container metrics-agent-tests bash
 
 tests.server:
 	docker build -t metrics-server-tests -f Docker/Dockerfile-server --target=tests .
