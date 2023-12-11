@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -47,6 +48,10 @@ func loopMetricsAndSend(md *models.Metrics, serverURL string) {
 func makeRequest(url string) (string, error) {
 	client := http.Client{
 		Timeout: 40 * time.Second,
+	}
+
+	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+		url = "http://" + url
 	}
 
 	req, err := http.NewRequest(http.MethodPost, url, nil)

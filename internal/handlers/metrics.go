@@ -22,7 +22,7 @@ func (h *Handler) Create(rw http.ResponseWriter, r *http.Request) {
 	metricsType := chi.URLParam(r, "type")
 	metricsName := chi.URLParam(r, "name")
 	metricsVal := chi.URLParam(r, "value")
-
+	// TODO вынести в отдельный сервис
 	if metricsType == string(models.Counter) {
 		intVal, err := strconv.ParseInt(metricsVal, 10, 64)
 		if err != nil {

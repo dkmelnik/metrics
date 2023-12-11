@@ -21,7 +21,7 @@ WORKDIR /app
 
 COPY --from=build /app/bin/server ./main
 
-CMD [ "./main", "-a=:8080" ]
+CMD [ "./main", "-a=localhost:43497" ]
 
 
 FROM golang:1.21.5-alpine3.17 AS build-tests

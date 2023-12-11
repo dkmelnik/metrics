@@ -24,6 +24,7 @@ func run() error {
 	c := configs.NewServer().Build()
 
 	r := handlers.ConfigureRouter()
+	log.Println(c.Addr)
 	s := server.NewServer(c.Addr, r)
 
 	if err := s.Run(); err != nil {
