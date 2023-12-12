@@ -25,7 +25,7 @@ func (h *Handler) Create(rw http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrTypeNotCorrect):
-			http.Error(rw, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		case errors.Is(err, ErrParse):
 			http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 

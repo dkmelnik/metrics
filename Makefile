@@ -26,7 +26,7 @@ restart:
 	make up.prod
 
 tests:
-	docker build -t $(DOCKER_IMAGE_TEST_NAME) -f Docker/Dockerfile-agent --target=tests .
+	docker build -t $(DOCKER_IMAGE_TEST_NAME) -f Docker/Dockerfile-tests --target=tests .
 	docker run --rm -it --name ${DOCKER_CONTAINER_NAME} $(DOCKER_IMAGE_TEST_NAME) bash
 
 
