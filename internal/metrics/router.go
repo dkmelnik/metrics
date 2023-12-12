@@ -1,4 +1,4 @@
-package handlers
+package metrics
 
 import (
 	"github.com/dkmelnik/metrics/internal/storage"
@@ -10,8 +10,10 @@ func ConfigureRouter() *chi.Mux {
 
 	//infrastructure
 	store := storage.NewMemoryStorage()
+
 	//metrics
-	metricsHandler := NewHandler(store)
+	service := NewService(store)
+	metricsHandler := NewHandler(service)
 
 	r.Post("/update/{type}/{name}/{value}", metricsHandler.Create)
 	r.Get("/value/{type}/{name}", metricsHandler.Get)

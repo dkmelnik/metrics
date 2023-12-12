@@ -1,4 +1,4 @@
-package metrics
+package collect
 
 import (
 	"context"
@@ -17,5 +17,5 @@ func TestCollect(t *testing.T) {
 	time.Sleep(time.Second * 5)
 	cancel()
 
-	assert.Equal(t, 2, mockMetrics.PollCount, "The number of metrics updates should be equivalent")
+	assert.Equal(t, 2, mockMetrics.PollCount, "The number of collect updates should be equivalent")
 }

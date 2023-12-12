@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/dkmelnik/metrics/configs"
-	"github.com/dkmelnik/metrics/internal/handlers"
+	"github.com/dkmelnik/metrics/internal/metrics"
 	"github.com/dkmelnik/metrics/internal/server"
 	"log"
 )
@@ -23,8 +23,8 @@ func run() error {
 
 	c := configs.NewServer().Build()
 
-	r := handlers.ConfigureRouter()
-	log.Println(c.Addr)
+	r := metrics.ConfigureRouter()
+
 	s := server.NewServer(c.Addr, r)
 
 	if err := s.Run(); err != nil {

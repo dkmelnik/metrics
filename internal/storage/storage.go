@@ -2,10 +2,6 @@ package storage
 
 import (
 	"errors"
-	"fmt"
-	"github.com/dkmelnik/metrics/internal/models"
-	"math"
-	"strconv"
 	"sync"
 )
 
@@ -37,10 +33,7 @@ func (ms *MemoryStorage) FindOneByTypeName(metricType, metricName string) (inter
 	if ms.metrics[metricType] == nil || ms.metrics[metricType][metricName] == nil {
 		return 0, errors.New("metric not found")
 	}
-	if metricType == string(models.Gauge) {
-		flVal, _ := strconv.ParseFloat(fmt.Sprintf("%v", ms.metrics[metricType][metricName]), 64)
-		return math.Round(flVal*1000) / 1000, nil
-	}
+
 	return ms.metrics[metricType][metricName], nil
 }
 

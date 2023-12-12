@@ -1,4 +1,4 @@
-package handlers
+package metrics
 
 import (
 	"fmt"
@@ -26,7 +26,7 @@ func testRequest(t *testing.T, ts *httptest.Server, method,
 	return resp, string(respBody)
 }
 
-func TestCreate(t *testing.T) {
+func TestHandler_Create(t *testing.T) {
 	type want struct {
 		code        int
 		response    string

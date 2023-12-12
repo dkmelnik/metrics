@@ -1,4 +1,4 @@
-package metrics
+package collect
 
 import (
 	"context"
@@ -73,7 +73,7 @@ func TestSend(t *testing.T) {
 
 	time.Sleep(time.Millisecond * 98)
 
-	assert.ElementsMatch(t, md.GetProperties(), metricsNames, "each of the metrics must be sent")
+	assert.ElementsMatch(t, md.GetProperties(), metricsNames, "each of the collect must be sent")
 }
 
 func TestBuildRequestURL(t *testing.T) {

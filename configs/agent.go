@@ -4,6 +4,7 @@ import (
 	"flag"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Agent struct {
@@ -17,8 +18,8 @@ func NewAgent() Agent {
 
 func (cb Agent) Build() Agent {
 	flag.StringVar(&cb.Addr, "a", "http://localhost:8080", "server by collected metric address ")
-	flag.IntVar(&cb.ReportInterval, "r", 10, "frequency of sending metrics to the server")
-	flag.IntVar(&cb.PollInterval, "p", 2, "frequency of sending metrics to the server")
+	flag.IntVar(&cb.ReportInterval, "r", 10, "frequency of sending collect to the server")
+	flag.IntVar(&cb.PollInterval, "p", 2, "frequency of sending collect to the server")
 	flag.Parse()
 
 	s, ok := os.LookupEnv("ADDRESS")
@@ -41,6 +42,8 @@ func (cb Agent) Build() Agent {
 			cb.PollInterval = i
 		}
 	}
-
+	if !strings.HasPrefix(cb.Addr, "http://") && !strings.HasPrefix(cb.Addr, "https://") {
+		cb.Addr = "http://" + cb.Addr
+	}
 	return cb
 }
