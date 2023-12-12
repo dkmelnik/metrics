@@ -38,7 +38,6 @@ func (h *Handler) Create(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	rw.WriteHeader(http.StatusOK)
 	fmt.Fprint(rw, http.StatusText(http.StatusOK))
-	return
 }
 
 func (h *Handler) Get(rw http.ResponseWriter, r *http.Request) {
