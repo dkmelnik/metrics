@@ -1,0 +1,24 @@
+version: "3.4"
+
+services:
+  agent:
+    container_name: agent
+    build:
+      context: .
+      dockerfile: docker/Dockerfile-agent
+      target: production
+    ports:
+      - "80:8080"
+
+
+  server:
+    container_name: server
+    build:
+      context: .
+      dockerfile: docker/Dockerfile-server
+      target: production
+    ports:
+      - "81:8080"
+
+
+

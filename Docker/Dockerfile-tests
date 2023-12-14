@@ -1,0 +1,21 @@
+FROM golang:1.21.5-alpine3.17 AS build
+
+WORKDIR /app
+
+COPY . .
+
+RUN go build -o bin/agent cmd/agent/main.go
+RUN go build -o bin/server cmd/server/main.go
+
+FROM --platform=linux/amd64 golang:1.21.3 AS tests
+
+WORKDIR /app
+
+COPY --from=build /app/bin/agent ./agent
+COPY --from=build /app/bin/server ./server
+
+COPY /local-tests/metricstest /usr/local/bin/metricstest
+
+RUN chmod +x /usr/local/bin/metricstest
+
+CMD ["metricstest", "-test.v", "-test.run=^TestIteration3[AB]*$", "-agent-binary-path=/app/agent", "-binary-path=/app/server", "-source-path=."]

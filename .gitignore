@@ -17,9 +17,14 @@ cmd/agent/agent
 cmd/server/main
 cmd/server/server
 
+tmp
+bin
+local-tests
+
 # Dependency directories (remove the comment below to include it)
 vendor/
 
 # IDEs directories
 .idea
 .vscode
+.DS_Store
