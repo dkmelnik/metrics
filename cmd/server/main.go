@@ -1,10 +1,11 @@
 package main
 
 import (
+	"log"
+
 	"github.com/dkmelnik/metrics/configs"
 	"github.com/dkmelnik/metrics/internal/metrics"
 	"github.com/dkmelnik/metrics/internal/server"
-	"log"
 )
 
 func main() {

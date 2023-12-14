@@ -2,10 +2,11 @@ package collect
 
 import (
 	"context"
-	"github.com/dkmelnik/metrics/internal/models"
 	"math/rand"
 	"runtime"
 	"time"
+
+	"github.com/dkmelnik/metrics/internal/models"
 )
 
 func Collect(ctx context.Context, t *time.Ticker, md *models.Metrics) {

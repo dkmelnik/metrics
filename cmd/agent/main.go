@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
+	"log"
+	"time"
+
 	"github.com/dkmelnik/metrics/configs"
 	"github.com/dkmelnik/metrics/internal/collect"
 	"github.com/dkmelnik/metrics/internal/models"
-	"log"
-	"time"
 )
 
 func main() {

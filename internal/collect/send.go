@@ -3,12 +3,13 @@ package collect
 import (
 	"context"
 	"fmt"
-	"github.com/dkmelnik/metrics/internal/models"
 	"io"
 	"log"
 	"net/http"
 	"reflect"
 	"time"
+
+	"github.com/dkmelnik/metrics/internal/models"
 )
 
 func Send(ctx context.Context, t *time.Ticker, md *models.Metrics, serverURL string) {

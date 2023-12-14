@@ -1,8 +1,9 @@
 package metrics
 
 import (
-	"github.com/dkmelnik/metrics/internal/storage"
 	"github.com/go-chi/chi/v5"
+
+	"github.com/dkmelnik/metrics/internal/storage"
 )
 
 func ConfigureRouter() *chi.Mux {
