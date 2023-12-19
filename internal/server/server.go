@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"errors"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -23,22 +25,28 @@ func NewServer(addr string, r http.Handler) *Server {
 }
 
 func (s *Server) Run() error {
-	go s.shutdown()
+	serverCtx, serverStopCtx := context.WithCancel(context.Background())
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	go func() {
+		<-sig
+
+		shutdownCtx, _ := context.WithTimeout(serverCtx, 30*time.Second)
+
+		go func() {
+			<-shutdownCtx.Done()
+			if errors.Is(shutdownCtx.Err(), context.DeadlineExceeded) {
+				log.Fatal("graceful shutdown timed out.. forcing exit.")
+			}
+		}()
+
+		err := s.app.Shutdown(shutdownCtx)
+		if err != nil {
+			log.Fatal(err)
+		}
+		serverStopCtx()
+	}()
 
 	return s.app.ListenAndServe()
-}
-
-// shutdown listens for signals and stops the server if they arrive
-func (s *Server) shutdown() error {
-	quit := make(chan os.Signal, 1)
-
-	// kill -15 <PID>, Ctrl-Z
-	signal.Notify(quit, syscall.SIGTERM, syscall.SIGTSTP)
-
-	<-quit
-
-	ctx, clFunc := context.WithTimeout(context.Background(), 2*time.Second)
-	defer clFunc()
-
-	return s.app.Shutdown(ctx)
 }
