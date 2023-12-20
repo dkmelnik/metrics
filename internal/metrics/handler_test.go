@@ -220,3 +220,25 @@ func TestHandler_Get(t *testing.T) {
 		})
 	}
 }
+
+func TestHandler_GetAll(t *testing.T) {
+	r := chi.NewRouter()
+
+	st := mock.NewStorageMock()
+	sr := NewService(st)
+	h := NewHandler(sr)
+
+	r.Get("/", h.GetAll)
+
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+
+	t.Run("positive test #1, return html", func(t *testing.T) {
+
+		resp, _ := testRequest(t, ts, http.MethodGet, "/")
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Equal(t, "text/html; charset=utf-8", resp.Header.Get("Content-Type"))
+	})
+}
