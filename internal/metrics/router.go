@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"github.com/dkmelnik/metrics/internal/logger"
 	"github.com/go-chi/chi/v5"
 
 	"github.com/dkmelnik/metrics/internal/storage"
@@ -8,6 +9,8 @@ import (
 
 func ConfigureRouter() *chi.Mux {
 	r := chi.NewRouter()
+
+	r.Use(logger.Log.RequestLogger)
 
 	//infrastructure
 	store := storage.NewMemoryStorage()
