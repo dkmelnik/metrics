@@ -5,7 +5,7 @@ WORKDIR /app
 RUN CGO_ENABLED=0 go install github.com/go-delve/delve/cmd/dlv@latest
 RUN curl -sSfL https://raw.githubusercontent.com/cosmtrek/air/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
 
-CMD ["sh", "-c", "air --build.cmd 'go build -o bin/agent cmd/agent/main.go' --build.bin 'dlv exec --accept-multiclient --log --headless --continue --listen :2345 --api-version 2 ./bin/agent'"]
+CMD ["sh", "-c", "air --build.cmd 'go build -o bin/agent cmd/agent/main.go' --build.bin 'ADDRESS=http://server:8080 LOG_LEVEL=info dlv exec --accept-multiclient --log --headless --continue --listen :2345 --api-version 2 ./bin/agent'"]
 
 FROM golang:1.21.3 AS build
 

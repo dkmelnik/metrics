@@ -20,16 +20,16 @@ func main() {
 
 func run() error {
 
-	if err := logger.Initialize("debug"); err != nil {
-		return err
-	}
-
 	if err := configs.CheckUnknownFlags(); err != nil {
 		return err
 	}
 
 	c := configs.NewServer().Build()
-	log.Printf("%v\n", c)
+
+	if err := logger.Initialize(c.LogLevel); err != nil {
+		return err
+	}
+
 	r := metrics.ConfigureRouter()
 
 	s := server.NewServer(c.Addr, r)
