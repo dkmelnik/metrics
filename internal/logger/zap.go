@@ -30,7 +30,7 @@ func Initialize(level string) error {
 	cfg.Level = lvl
 	cfg.Encoding = "console"
 
-	l, err := zap.NewProduction()
+	l, err := cfg.Build()
 
 	if err != nil {
 		return err
@@ -78,7 +78,7 @@ func (l *logger) RequestLogger(h http.Handler) http.Handler {
 			zap.Int("code", lw.responseData.status),
 			zap.Int("size", lw.responseData.size),
 			zap.String("status", http.StatusText(lw.responseData.status)),
-			zap.Duration("time", time.Now().Sub(start)),
+			zap.Duration("time", time.Since(start)),
 		)
 	})
 }
