@@ -2,11 +2,10 @@ package metrics
 
 import (
 	"fmt"
-	"math"
-	"strconv"
-
 	"github.com/dkmelnik/metrics/internal/metrics/interfaces"
 	"github.com/dkmelnik/metrics/internal/models"
+	"github.com/dkmelnik/metrics/internal/utils"
+	"strconv"
 )
 
 type Service struct {
@@ -17,7 +16,7 @@ func NewService(mr interfaces.MetricsRepository) *Service {
 	return &Service{mr}
 }
 
-func (s *Service) SaveMetricData(tp, nm, vl string) error {
+func (s *Service) RecordMetricValue(tp, nm, vl string) error {
 	switch tp {
 	case string(models.Counter):
 		intVal, err := strconv.ParseInt(vl, 10, 64)
@@ -45,24 +44,40 @@ func (s *Service) SaveMetricData(tp, nm, vl string) error {
 	}
 }
 
+func (s *Service) ProcessMetricRequest(dto MetricRequest) error {
+	var vl interface{}
+
+	switch dto.MType {
+	case string(models.Counter):
+		if dto.Delta == nil {
+			return ErrParse
+		}
+		if prev, err := s.metricsRepo.FindOneByTypeName(dto.MType, dto.ID); err != nil {
+			vl = *dto.Delta
+		} else {
+			i := prev.(int64)
+			vl = i + *dto.Delta
+		}
+	case string(models.Gauge):
+		if dto.Value == nil {
+			return ErrParse
+		}
+		vl = *dto.Value
+	default:
+		return ErrTypeNotCorrect
+	}
+
+	s.metricsRepo.Save(dto.MType, dto.ID, vl)
+	return nil
+}
+
 func (s *Service) GetMetricData(tp, nm string) (string, error) {
 	metric, err := s.metricsRepo.FindOneByTypeName(tp, nm)
 	if err != nil {
 		return "", err
 	}
 
-	var out string
-	if tp == string(models.Gauge) {
-		flVal, err := strconv.ParseFloat(fmt.Sprintf("%v", metric), 64)
-		if err != nil {
-			return "", ErrParse
-		}
-		out = fmt.Sprintf("%v", math.Round(flVal*1000)/1000)
-	} else {
-		out = fmt.Sprintf("%v", metric)
-	}
-
-	return out, nil
+	return s.formatToString(tp, metric)
 }
 
 func (s *Service) GetAllInHTML() string {
@@ -73,7 +88,8 @@ func (s *Service) GetAllInHTML() string {
 	for metricName, values := range metrics {
 		html += fmt.Sprintf("<li><strong>%s</strong>: <ul>", metricName)
 		for key, value := range values {
-			html += fmt.Sprintf("<li>%s: %v</li>", key, value)
+			vl, _ := s.formatToString(metricName, value)
+			html += fmt.Sprintf("<li>%s: %s</li>", key, vl)
 		}
 		html += "</ul></li>"
 	}
@@ -81,4 +97,23 @@ func (s *Service) GetAllInHTML() string {
 	html += "</ul></body></html>"
 
 	return html
+}
+
+func (s *Service) formatToString(tp string, vl interface{}) (string, error) {
+	switch tp {
+	case string(models.Gauge):
+		flVal, err := strconv.ParseFloat(fmt.Sprintf("%v", vl), 64)
+		if err != nil {
+			return "", ErrParse
+		}
+		return utils.FormatFloat(flVal, 3), nil
+	case string(models.Counter):
+		iVal, err := strconv.ParseInt(fmt.Sprintf("%d", vl), 10, 64)
+		if err != nil {
+			return "", ErrParse
+		}
+		return fmt.Sprintf("%d", iVal), nil
+	default:
+		return fmt.Sprintf("%s", vl), nil
+	}
 }
