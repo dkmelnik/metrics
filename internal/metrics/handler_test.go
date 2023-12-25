@@ -10,12 +10,14 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
 func testRequest(t *testing.T, ts *httptest.Server, method,
-	path string) (*http.Response, string) {
-	req, err := http.NewRequest(method, ts.URL+path, nil)
+	path string, body []byte) (*http.Response, string) {
+
+	req, err := http.NewRequest(method, ts.URL+path, strings.NewReader(string(body)))
 	require.NoError(t, err)
 
 	resp, err := ts.Client().Do(req)
@@ -85,7 +87,7 @@ func TestHandler_Create(t *testing.T) {
 	defer ts.Close()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp, get := testRequest(t, ts, tt.method, tt.request)
+			resp, get := testRequest(t, ts, tt.method, tt.request, nil)
 			defer resp.Body.Close()
 
 			assert.Equal(t, tt.want.code, resp.StatusCode)
@@ -204,7 +206,7 @@ func TestHandler_Get(t *testing.T) {
 	sr := NewService(st)
 	h := NewHandler(sr)
 
-	r.Get("/value/{type}/{name}", h.Get)
+	r.Get("/value/{type}/{name}", h.HandleGetMetric)
 
 	ts := httptest.NewServer(r)
 	defer ts.Close()
@@ -212,7 +214,7 @@ func TestHandler_Get(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			resp, get := testRequest(t, ts, http.MethodGet, "/value"+"/"+tt.metricsType+"/"+tt.metricsName)
+			resp, get := testRequest(t, ts, http.MethodGet, "/value"+"/"+tt.metricsType+"/"+tt.metricsName, nil)
 			defer resp.Body.Close()
 
 			assert.Equal(t, tt.want.code, resp.StatusCode)
@@ -228,17 +230,185 @@ func TestHandler_GetAll(t *testing.T) {
 	sr := NewService(st)
 	h := NewHandler(sr)
 
-	r.Get("/", h.GetAll)
+	r.Get("/", h.HandleGetAllMetrics)
 
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 
 	t.Run("positive test #1, return html", func(t *testing.T) {
 
-		resp, _ := testRequest(t, ts, http.MethodGet, "/")
+		resp, _ := testRequest(t, ts, http.MethodGet, "/", nil)
 		defer resp.Body.Close()
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		assert.Equal(t, "text/html; charset=utf-8", resp.Header.Get("Content-Type"))
 	})
+}
+
+func Test_HandleProcessMetricRequest(t *testing.T) {
+	type want struct {
+		code        int
+		response    string
+		contentType string
+	}
+
+	tests := []struct {
+		name    string
+		body    []byte
+		method  string
+		want    want
+		wantErr bool
+	}{
+		{
+			name: "negative test #1, empty body",
+			body: []byte(`{
+				
+			}`),
+			method:  http.MethodPost,
+			wantErr: true,
+			want: want{
+				code:        http.StatusBadRequest,
+				response:    http.StatusText(http.StatusBadRequest) + "\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+		{
+			name: "negative test #2, empty type",
+			body: []byte(`{
+				"id": "testCounter",
+				"delta": 1
+			}`),
+			method:  http.MethodPost,
+			wantErr: true,
+			want: want{
+				code:        http.StatusBadRequest,
+				response:    http.StatusText(http.StatusBadRequest) + "\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+		{
+			name: "negative test #3, incorrect type",
+			body: []byte(`{
+				"id": "testCounter",
+    			"type": "none",
+				"delta": 1
+			}`),
+			method:  http.MethodPost,
+			wantErr: true,
+			want: want{
+				code:        http.StatusBadRequest,
+				response:    http.StatusText(http.StatusBadRequest) + "\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+		{
+			name: "negative test #4, counter type incorrect delta",
+			body: []byte(`{
+				"id": "testCounter",
+    			"type": "counter",
+				"delta": "none"
+			}`),
+			method:  http.MethodPost,
+			wantErr: true,
+			want: want{
+				code:        http.StatusBadRequest,
+				response:    http.StatusText(http.StatusBadRequest) + "\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+		{
+			name: "negative test #4, gauge type incorrect value",
+			body: []byte(`{
+				"id": "LastGC",
+    			"type": "gauge",
+				"value": "none"
+			}`),
+			method:  http.MethodPost,
+			wantErr: true,
+			want: want{
+				code:        http.StatusBadRequest,
+				response:    http.StatusText(http.StatusBadRequest) + "\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		}, {
+			name: "negative test #5, gauge type empty value",
+			body: []byte(`{
+				"id": "LastGC",
+    			"type": "gauge",
+			}`),
+			method:  http.MethodPost,
+			wantErr: true,
+			want: want{
+				code:        http.StatusBadRequest,
+				response:    http.StatusText(http.StatusBadRequest) + "\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		}, {
+			name: "negative test #6, counter type empty delta",
+			body: []byte(`{
+				"id": "TestCounter",
+    			"type": "counter",
+			}`),
+			method:  http.MethodPost,
+			wantErr: true,
+			want: want{
+				code:        http.StatusBadRequest,
+				response:    http.StatusText(http.StatusBadRequest) + "\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		}, {
+			name: "positive test 7, gauge type return json",
+			body: []byte(`{
+				"id": "LastGC",
+    			"type": "gauge",
+				"value": 10.123123
+			}`),
+			method:  http.MethodPost,
+			wantErr: false,
+			want: want{
+				code: http.StatusOK,
+				response: `{
+					"id": "LastGC",
+					"type": "gauge",
+					"value": 10.123123
+				}`,
+				contentType: "application/json",
+			},
+		}, {
+			name: "positive test #8, counter type return json",
+			body: []byte(`{
+				"id": "TestCounter",
+    			"type": "counter",
+				"delta": 1
+			}`),
+			method:  http.MethodPost,
+			wantErr: false,
+			want: want{
+				code: http.StatusOK,
+				response: `{
+					"id": "TestCounter",
+					"type": "counter",
+					"delta": 1
+				}`,
+				contentType: "application/json",
+			},
+		},
+	}
+
+	ts := httptest.NewServer(ConfigureRouter())
+	defer ts.Close()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, get := testRequest(t, ts, tt.method, "/update", tt.body)
+			defer resp.Body.Close()
+
+			assert.Equal(t, tt.want.code, resp.StatusCode)
+			if tt.wantErr {
+				assert.Equal(t, tt.want.response, get)
+			} else {
+				assert.JSONEq(t, tt.want.response, get)
+			}
+		})
+	}
 }

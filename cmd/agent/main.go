@@ -13,6 +13,7 @@ import (
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	log.Println("agent is running!")
+	return
 	if err := run(); err != nil {
 		log.Fatal(err)
 	}

@@ -16,7 +16,7 @@ func NewService(mr interfaces.MetricsRepository) *Service {
 	return &Service{mr}
 }
 
-func (s *Service) SaveMetricData(tp, nm, vl string) error {
+func (s *Service) RecordMetricValue(tp, nm, vl string) error {
 	switch tp {
 	case string(models.Counter):
 		intVal, err := strconv.ParseInt(vl, 10, 64)
@@ -42,6 +42,33 @@ func (s *Service) SaveMetricData(tp, nm, vl string) error {
 	default:
 		return ErrTypeNotCorrect
 	}
+}
+
+func (s *Service) ProcessMetricRequest(dto MetricRequest) error {
+	var vl interface{}
+
+	switch dto.MType {
+	case string(models.Counter):
+		if dto.Delta == nil {
+			return ErrParse
+		}
+		if prev, err := s.metricsRepo.FindOneByTypeName(dto.MType, dto.ID); err != nil {
+			vl = *dto.Delta
+		} else {
+			i := prev.(int64)
+			vl = i + *dto.Delta
+		}
+	case string(models.Gauge):
+		if dto.Value == nil {
+			return ErrParse
+		}
+		vl = *dto.Value
+	default:
+		return ErrTypeNotCorrect
+	}
+
+	s.metricsRepo.Save(dto.MType, dto.ID, vl)
+	return nil
 }
 
 func (s *Service) GetMetricData(tp, nm string) (string, error) {
