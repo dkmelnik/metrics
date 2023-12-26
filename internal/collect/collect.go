@@ -5,11 +5,9 @@ import (
 	"math/rand"
 	"runtime"
 	"time"
-
-	"github.com/dkmelnik/metrics/internal/models"
 )
 
-func Collect(ctx context.Context, t *time.Ticker, md *models.Metrics) {
+func Collect(ctx context.Context, t *time.Ticker, md *Metrics) {
 	var m runtime.MemStats
 	pollCount := 0
 
@@ -21,7 +19,7 @@ func Collect(ctx context.Context, t *time.Ticker, md *models.Metrics) {
 			pollCount++
 
 			runtime.ReadMemStats(&m)
-			*md = models.Metrics{
+			*md = Metrics{
 				Alloc:         float64(m.Alloc),
 				TotalAlloc:    float64(m.TotalAlloc),
 				Sys:           float64(m.Sys),

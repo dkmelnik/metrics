@@ -7,13 +7,11 @@ import (
 
 	"github.com/dkmelnik/metrics/configs"
 	"github.com/dkmelnik/metrics/internal/collect"
-	"github.com/dkmelnik/metrics/internal/models"
 )
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	log.Println("agent is running!")
-	return
 	if err := run(); err != nil {
 		log.Fatal(err)
 	}
@@ -26,7 +24,7 @@ func run() error {
 
 	c := configs.NewAgent().Build()
 
-	md := &models.Metrics{}
+	md := &collect.Metrics{}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

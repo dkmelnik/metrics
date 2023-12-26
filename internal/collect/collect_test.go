@@ -2,14 +2,13 @@ package collect
 
 import (
 	"context"
-	"github.com/dkmelnik/metrics/internal/models"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
 
 func TestCollect(t *testing.T) {
-	mockMetrics := &models.Metrics{}
+	mockMetrics := &Metrics{}
 	ctx, cancel := context.WithCancel(context.Background())
 
 	go Collect(ctx, time.NewTicker(time.Second*2), mockMetrics)

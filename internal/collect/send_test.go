@@ -2,6 +2,7 @@ package collect
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/dkmelnik/metrics/internal/models"
 	"github.com/stretchr/testify/assert"
 	"log"
@@ -9,29 +10,35 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"runtime"
-	"strings"
 	"testing"
 	"time"
 )
 
-func TestSend(t *testing.T) {
+func Test_Send(t *testing.T) {
 	metricsNames := make([]string, 0)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println(r.URL.Path)
-		parts := strings.Split(r.URL.Path, "/")
-		metricsNames = append(metricsNames, parts[3])
+		var data models.Metric
+
+		err := json.NewDecoder(r.Body).Decode(&data)
+		if err != nil {
+			log.Println("Error decoding request body:", err)
+			http.Error(w, "Error decoding request body", http.StatusBadRequest)
+			return
+		}
+
+		metricsNames = append(metricsNames, data.ID)
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	defer server.Close()
 
-	md := &models.Metrics{}
+	md := &Metrics{}
 
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 
-	*md = models.Metrics{
+	*md = Metrics{
 		Alloc:         float64(m.Alloc),
 		TotalAlloc:    float64(m.TotalAlloc),
 		Sys:           float64(m.Sys),
@@ -76,14 +83,56 @@ func TestSend(t *testing.T) {
 	assert.ElementsMatch(t, md.GetProperties(), metricsNames, "each of the collect must be sent")
 }
 
-func TestBuildRequestURL(t *testing.T) {
-	serverURL := "http://example.com"
-	tag := "gauge"
-	fieldName := "Alloc"
-	value := "243288"
+func Test_BuildRequestBody(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		metric   string
+		name     string
+		value    interface{}
+		expected map[string]interface{}
+	}{
+		{
+			desc:   "Build gauge request body",
+			metric: "gauge",
+			name:   "some_metric_name",
+			value:  25.5,
+			expected: map[string]interface{}{
+				"id":    "some_metric_name",
+				"type":  "gauge",
+				"value": 25.5,
+			},
+		},
+		{
+			desc:   "Build counter request body",
+			metric: "counter",
+			name:   "another_metric_name",
+			value:  10,
+			expected: map[string]interface{}{
+				"id":    "another_metric_name",
+				"type":  "counter",
+				"delta": 10,
+			},
+		},
+		{
+			desc:   "Invalid value type",
+			metric: "gauge",
+			name:   "invalid_metric",
+			value:  "invalid_value",
+			expected: map[string]interface{}{
+				"id":   "invalid_metric",
+				"type": "gauge",
+			},
+		},
+	}
 
-	expectedURL := "http://example.com/update/gauge/Alloc/243288"
-	result := buildRequestURL(serverURL, tag, fieldName, value)
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			result := buildRequestBody(tc.metric, tc.name, tc.value)
 
-	assert.Equal(t, expectedURL, result)
+			expectedJSON, _ := json.Marshal(tc.expected)
+			resultJSON, _ := json.Marshal(result)
+
+			assert.JSONEq(t, string(expectedJSON), string(resultJSON))
+		})
+	}
 }
