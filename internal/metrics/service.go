@@ -23,12 +23,20 @@ func (s *Service) RecordMetricValue(tp, nm, vl string) error {
 		if err != nil {
 			return ErrParse
 		}
-		prev, err := s.metricsRepo.FindOneByTypeName(tp, nm)
+		_, prev, err := s.metricsRepo.FindOneByTypeAndID(tp, nm)
 		if err != nil {
-			s.metricsRepo.Save(tp, nm, intVal)
+			s.metricsRepo.SaveOrUpdate(models.Metric{
+				ID:    nm,
+				MType: tp,
+				Delta: &intVal,
+			})
 		} else {
-			i := prev.(int64)
-			s.metricsRepo.Save(tp, nm, intVal+i)
+			if prev.Delta != nil {
+				*prev.Delta += intVal
+				s.metricsRepo.SaveOrUpdate(prev)
+				return nil
+			}
+			return ErrParse
 		}
 		return nil
 	case string(models.Gauge):
@@ -36,7 +44,11 @@ func (s *Service) RecordMetricValue(tp, nm, vl string) error {
 		if err != nil {
 			return ErrParse
 		}
-		s.metricsRepo.Save(tp, nm, flVal)
+		s.metricsRepo.SaveOrUpdate(models.Metric{
+			ID:    nm,
+			MType: tp,
+			Value: &flVal,
+		})
 		return nil
 
 	default:
@@ -44,40 +56,59 @@ func (s *Service) RecordMetricValue(tp, nm, vl string) error {
 	}
 }
 
-func (s *Service) ProcessMetricRequest(dto MetricRequest) error {
-	var vl interface{}
-
+// ProcessMetricRequest В теле ответа отправляйте JSON той же структуры с актуальным (изменённым) значением Value.
+func (s *Service) ProcessMetricRequest(dto models.Metric) error {
 	switch dto.MType {
-	case string(models.Counter):
-		if dto.Delta == nil {
-			return ErrParse
-		}
-		if prev, err := s.metricsRepo.FindOneByTypeName(dto.MType, dto.ID); err != nil {
-			vl = *dto.Delta
-		} else {
-			i := prev.(int64)
-			vl = i + *dto.Delta
-		}
 	case string(models.Gauge):
-		if dto.Value == nil {
+		s.metricsRepo.SaveOrUpdate(dto)
+	case string(models.Counter):
+		if _, prev, err := s.metricsRepo.FindOneByTypeAndID(dto.MType, dto.ID); err != nil {
+			s.metricsRepo.SaveOrUpdate(dto)
+			return nil
+		} else {
+			if prev.Delta != nil && dto.Delta != nil {
+				*prev.Delta += *dto.Delta
+				s.metricsRepo.SaveOrUpdate(prev)
+				return nil
+			}
 			return ErrParse
 		}
-		vl = *dto.Value
 	default:
 		return ErrTypeNotCorrect
 	}
 
-	s.metricsRepo.Save(dto.MType, dto.ID, vl)
 	return nil
 }
 
-func (s *Service) GetMetricData(tp, nm string) (string, error) {
-	metric, err := s.metricsRepo.FindOneByTypeName(tp, nm)
+// GetMetric теле ответа должен приходить такой же JSON, но с уже заполненными значениями метрик.
+func (s *Service) GetMetric(metricType string, metricID string) (models.Metric, error) {
+	_, metric, err := s.metricsRepo.FindOneByTypeAndID(metricType, metricID)
+	if err != nil {
+		return models.Metric{}, err
+	}
+
+	//if metric.MType == string(models.Gauge) {
+	//	round := math.Ceil(*metric.Value*1000) / 1000
+	//	metric.Value = &round
+	//}
+	//log.Printf("%v", metric)
+	//log.Println(metric.Value)
+	//log.Println(*metric.Value)
+
+	return metric, nil
+}
+
+func (s *Service) GetMetricValueString(tp, nm string) (string, error) {
+	_, metric, err := s.metricsRepo.FindOneByTypeAndID(tp, nm)
 	if err != nil {
 		return "", err
 	}
 
-	return s.formatToString(tp, metric)
+	if tp == string(models.Gauge) {
+		return s.formatToString(tp, *metric.Value)
+	} else {
+		return s.formatToString(tp, *metric.Delta)
+	}
 }
 
 func (s *Service) GetAllInHTML() string {
@@ -85,13 +116,15 @@ func (s *Service) GetAllInHTML() string {
 
 	html := "<html><head><title>Metric Values</title></head><body><h1>Metric Values:</h1><ul>"
 
-	for metricName, values := range metrics {
-		html += fmt.Sprintf("<li><strong>%s</strong>: <ul>", metricName)
-		for key, value := range values {
-			vl, _ := s.formatToString(metricName, value)
-			html += fmt.Sprintf("<li>%s: %s</li>", key, vl)
+	for _, metric := range metrics {
+		html += "<li>"
+		html += "<strong>" + metric.ID + ": </strong>"
+		if metric.MType == "counter" {
+			html += fmt.Sprintf("Value: %v", *metric.Delta)
+		} else if metric.MType == "gauge" {
+			html += fmt.Sprintf("Value: %v", utils.FormatFloat(*metric.Value, 3))
 		}
-		html += "</ul></li>"
+		html += "</li>"
 	}
 
 	html += "</ul></body></html>"

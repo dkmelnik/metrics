@@ -206,7 +206,7 @@ func TestHandler_Get(t *testing.T) {
 	sr := NewService(st)
 	h := NewHandler(sr)
 
-	r.Get("/value/{type}/{name}", h.HandleGetMetric)
+	r.Get("/value/{type}/{name}", h.HandleGetMetricValue)
 
 	ts := httptest.NewServer(r)
 	defer ts.Close()
