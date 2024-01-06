@@ -9,7 +9,7 @@ var metricValues = map[string]map[string]interface{}{
 	"gauge": {
 		"HeapAlloc":  150112.000,
 		"HeapSys":    3.833856e+06,
-		"MCacheSys":  13,
+		"MCacheSys":  13.0,
 		"TotalAlloc": 7.70766,
 		"Mallocs":    282.00,
 		"OtherSys":   3485734.100,
@@ -42,8 +42,9 @@ func (s *StorageMock) fillStorage() {
 				fl, _ := value.(float64)
 				m.Value = &fl
 			} else {
-				it, _ := value.(int64)
-				m.Delta = &it
+				it, _ := value.(int)
+				it2 := int64(it)
+				m.Delta = &it2
 			}
 			s.SaveOrUpdate(m)
 		}
