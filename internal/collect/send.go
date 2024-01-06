@@ -64,7 +64,7 @@ func sendMetricRequest(url string, body map[string]interface{}) {
 	resp, err := client.R().
 		SetHeader("Content-Type", "application/json").
 		SetBody(body).
-		Post(fmt.Sprintf("%s/update", url))
+		Post(fmt.Sprintf("%s/update/", url))
 
 	if err != nil {
 		log.Println(err)
