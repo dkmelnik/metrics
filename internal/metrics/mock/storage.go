@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"github.com/dkmelnik/metrics/internal/models"
 	"github.com/dkmelnik/metrics/internal/storage"
 )
 
@@ -33,7 +34,18 @@ func NewStorageMock() *StorageMock {
 func (s *StorageMock) fillStorage() {
 	for metricType, metrics := range metricValues {
 		for metricName, value := range metrics {
-			s.Save(metricType, metricName, value)
+			var m = models.Metric{
+				ID:    metricName,
+				MType: metricType,
+			}
+			if metricType == string(models.Gauge) {
+				fl, _ := value.(float64)
+				m.Value = &fl
+			} else {
+				it, _ := value.(int64)
+				m.Delta = &it
+			}
+			s.SaveOrUpdate(m)
 		}
 	}
 }
