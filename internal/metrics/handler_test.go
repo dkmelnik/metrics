@@ -400,7 +400,7 @@ func Test_HandleProcessMetricRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp, get := testRequest(t, ts, tt.method, "/update", tt.body)
+			resp, get := testRequest(t, ts, tt.method, "/update/", tt.body)
 			defer resp.Body.Close()
 
 			assert.Equal(t, tt.want.code, resp.StatusCode)
