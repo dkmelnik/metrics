@@ -79,11 +79,6 @@ func (h *Handler) HandleProcessMetricRequest(rw http.ResponseWriter, r *http.Req
 	}
 }
 
-type GetMetricRequest struct {
-	ID    string `json:"id"`
-	MType string `json:"type"`
-}
-
 func (h *Handler) HandleGetMetric(rw http.ResponseWriter, r *http.Request) {
 	var body GetMetricRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {

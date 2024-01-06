@@ -7,19 +7,20 @@ import (
 	"time"
 )
 
-func Collect(ctx context.Context, t *time.Ticker, md *Metrics) {
+func Collect(ctx context.Context, t *time.Ticker, ch chan<- *Metrics) {
 	var m runtime.MemStats
 	pollCount := 0
 
 	for {
 		select {
 		case <-ctx.Done():
+			close(ch)
 			return
 		case <-t.C:
 			pollCount++
 
 			runtime.ReadMemStats(&m)
-			*md = Metrics{
+			ch <- &Metrics{
 				Alloc:         float64(m.Alloc),
 				TotalAlloc:    float64(m.TotalAlloc),
 				Sys:           float64(m.Sys),

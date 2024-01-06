@@ -11,16 +11,13 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-func Send(ctx context.Context, t *time.Ticker, md *Metrics, serverURL string) {
+func Send(ctx context.Context, t *time.Ticker, ch <-chan *Metrics, serverURL string) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			if md == nil {
-				continue
-			}
-			loopMetricsAndSend(md, serverURL)
+			loopMetricsAndSend(<-ch, serverURL)
 		}
 	}
 }
@@ -68,8 +65,6 @@ func sendMetricRequest(url string, body map[string]interface{}) {
 		SetHeader("Content-Type", "application/json").
 		SetBody(body).
 		Post(fmt.Sprintf("%s/update", url))
-
-	log.Println(body)
 
 	if err != nil {
 		log.Println(err)
