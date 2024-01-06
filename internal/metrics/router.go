@@ -20,9 +20,9 @@ func ConfigureRouter() *chi.Mux {
 	metricsHandler := NewHandler(service)
 
 	r.Post("/update/{type}/{name}/{value}", metricsHandler.HandleRecordMetricValue)
-	r.Post("/update", metricsHandler.HandleProcessMetricRequest)
+	r.Post("/update/", metricsHandler.HandleProcessMetricRequest)
 	r.Get("/value/{type}/{name}", metricsHandler.HandleGetMetricValue)
-	r.Post("/value", metricsHandler.HandleGetMetric)
+	r.Post("/value/", metricsHandler.HandleGetMetric)
 	r.Get("/", metricsHandler.HandleGetAllMetrics)
 
 	return r
