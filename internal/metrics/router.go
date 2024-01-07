@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"github.com/dkmelnik/metrics/internal/logger"
+	"github.com/dkmelnik/metrics/internal/middlewares"
 	"github.com/go-chi/chi/v5"
 
 	"github.com/dkmelnik/metrics/internal/storage"
@@ -20,10 +21,23 @@ func ConfigureRouter() *chi.Mux {
 	metricsHandler := NewHandler(service)
 
 	r.Post("/update/{type}/{name}/{value}", metricsHandler.HandleRecordMetricValue)
-	r.Post("/update/", metricsHandler.HandleProcessMetricRequest)
+
+	r.Route("/update/", func(r chi.Router) {
+		r.Use(middlewares.Compress)
+		r.Post("/", metricsHandler.HandleProcessMetricRequest)
+	})
+
 	r.Get("/value/{type}/{name}", metricsHandler.HandleGetMetricValue)
-	r.Post("/value/", metricsHandler.HandleGetMetric)
-	r.Get("/", metricsHandler.HandleGetAllMetrics)
+
+	r.Route("/value/", func(r chi.Router) {
+		r.Use(middlewares.Compress)
+		r.Post("/", metricsHandler.HandleGetMetric)
+	})
+
+	r.Route("/", func(r chi.Router) {
+		r.Use(middlewares.Compress)
+		r.Get("/", metricsHandler.HandleGetAllMetrics)
+	})
 
 	return r
 }

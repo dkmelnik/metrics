@@ -32,13 +32,13 @@ func loopMetricsAndSend(md *Metrics, serverURL string) {
 
 		tag := field.Tag.Get("metric")
 		if tag != "" {
-			body := buildRequestBody(tag, field.Name, value.Interface())
+			body := buildCompressRequestBody(tag, field.Name, value.Interface())
 			sendMetricRequest(serverURL, body)
 		}
 	}
 }
 
-func buildRequestBody(mt string, mn string, vl interface{}) map[string]interface{} {
+func buildCompressRequestBody(mt string, mn string, vl interface{}) map[string]interface{} {
 	m := make(map[string]interface{})
 
 	m["id"] = mn
