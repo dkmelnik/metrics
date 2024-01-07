@@ -3,30 +3,26 @@ package collect
 import (
 	"context"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"reflect"
 	"time"
 
-	"github.com/dkmelnik/metrics/internal/models"
+	"github.com/go-resty/resty/v2"
 )
 
-func Send(ctx context.Context, t *time.Ticker, md *models.Metrics, serverURL string) {
+func Send(ctx context.Context, t *time.Ticker, ch <-chan *Metrics, serverURL string) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			if md == nil {
-				continue
-			}
-			loopMetricsAndSend(md, serverURL)
+			loopMetricsAndSend(<-ch, serverURL)
 		}
 	}
 }
 
-func loopMetricsAndSend(md *models.Metrics, serverURL string) {
+func loopMetricsAndSend(md *Metrics, serverURL string) {
 	metricType := reflect.TypeOf(*md)
 	metricValue := reflect.ValueOf(*md)
 
@@ -36,43 +32,46 @@ func loopMetricsAndSend(md *models.Metrics, serverURL string) {
 
 		tag := field.Tag.Get("metric")
 		if tag != "" {
-			reqURL := buildRequestURL(serverURL, tag, field.Name, convertToString(value))
-			_, err := makeRequest(reqURL)
-			if err != nil {
-				log.Println(err)
-			}
+			body := buildCompressRequestBody(tag, field.Name, value.Interface())
+			sendMetricRequest(serverURL, body)
 		}
 	}
 }
 
-func makeRequest(url string) (string, error) {
-	client := http.Client{
-		Timeout: 40 * time.Second,
+func buildCompressRequestBody(mt string, mn string, vl interface{}) map[string]interface{} {
+	m := make(map[string]interface{})
+
+	m["id"] = mn
+	m["type"] = mt
+
+	switch mt {
+	case "gauge":
+		if v, ok := vl.(float64); ok {
+			m["value"] = v
+		}
+	case "counter":
+		if v, ok := vl.(int); ok {
+			m["delta"] = v
+		}
 	}
 
-	req, err := http.NewRequest(http.MethodPost, url, nil)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Add("Content-Type", "text/plain")
-
-	res, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer res.Body.Close()
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return "", err
-	}
-	return string(body), nil
+	return m
 }
 
-func buildRequestURL(serverURL, tag, fieldName, value string) string {
-	return fmt.Sprintf("%s/update/%s/%s/%s", serverURL, tag, fieldName, value)
-}
+func sendMetricRequest(url string, body map[string]interface{}) {
+	client := resty.New()
 
-func convertToString(value reflect.Value) string {
-	return fmt.Sprintf("%v", value.Interface())
+	resp, err := client.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(body).
+		Post(fmt.Sprintf("%s/update/", url))
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	if resp.StatusCode() != http.StatusOK {
+		log.Printf("Unexpected status code: %d", resp.StatusCode())
+	}
 }

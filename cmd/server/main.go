@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/dkmelnik/metrics/internal/logger"
 	"log"
 
 	"github.com/dkmelnik/metrics/configs"
@@ -18,11 +19,16 @@ func main() {
 }
 
 func run() error {
+
 	if err := configs.CheckUnknownFlags(); err != nil {
 		return err
 	}
 
 	c := configs.NewServer().Build()
+
+	if err := logger.Initialize(c.LogLevel); err != nil {
+		return err
+	}
 
 	r := metrics.ConfigureRouter()
 

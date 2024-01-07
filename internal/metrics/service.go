@@ -2,11 +2,10 @@ package metrics
 
 import (
 	"fmt"
-	"math"
-	"strconv"
-
 	"github.com/dkmelnik/metrics/internal/metrics/interfaces"
 	"github.com/dkmelnik/metrics/internal/models"
+	"github.com/dkmelnik/metrics/internal/utils"
+	"strconv"
 )
 
 type Service struct {
@@ -17,19 +16,27 @@ func NewService(mr interfaces.MetricsRepository) *Service {
 	return &Service{mr}
 }
 
-func (s *Service) SaveMetricData(tp, nm, vl string) error {
+func (s *Service) RecordMetricValue(tp, nm, vl string) error {
 	switch tp {
 	case string(models.Counter):
 		intVal, err := strconv.ParseInt(vl, 10, 64)
 		if err != nil {
 			return ErrParse
 		}
-		prev, err := s.metricsRepo.FindOneByTypeName(tp, nm)
+		_, prev, err := s.metricsRepo.FindOneByTypeAndID(tp, nm)
 		if err != nil {
-			s.metricsRepo.Save(tp, nm, intVal)
+			s.metricsRepo.SaveOrUpdate(models.Metric{
+				ID:    nm,
+				MType: tp,
+				Delta: &intVal,
+			})
 		} else {
-			i := prev.(int64)
-			s.metricsRepo.Save(tp, nm, intVal+i)
+			if prev.Delta != nil {
+				*prev.Delta += intVal
+				s.metricsRepo.SaveOrUpdate(prev)
+				return nil
+			}
+			return ErrParse
 		}
 		return nil
 	case string(models.Gauge):
@@ -37,7 +44,11 @@ func (s *Service) SaveMetricData(tp, nm, vl string) error {
 		if err != nil {
 			return ErrParse
 		}
-		s.metricsRepo.Save(tp, nm, flVal)
+		s.metricsRepo.SaveOrUpdate(models.Metric{
+			ID:    nm,
+			MType: tp,
+			Value: &flVal,
+		})
 		return nil
 
 	default:
@@ -45,24 +56,59 @@ func (s *Service) SaveMetricData(tp, nm, vl string) error {
 	}
 }
 
-func (s *Service) GetMetricData(tp, nm string) (string, error) {
-	metric, err := s.metricsRepo.FindOneByTypeName(tp, nm)
+// ProcessMetricRequest В теле ответа отправляйте JSON той же структуры с актуальным (изменённым) значением Value.
+func (s *Service) ProcessMetricRequest(dto models.Metric) error {
+	switch dto.MType {
+	case string(models.Gauge):
+		s.metricsRepo.SaveOrUpdate(dto)
+	case string(models.Counter):
+		if _, prev, err := s.metricsRepo.FindOneByTypeAndID(dto.MType, dto.ID); err != nil {
+			s.metricsRepo.SaveOrUpdate(dto)
+			return nil
+		} else {
+			if prev.Delta != nil && dto.Delta != nil {
+				*prev.Delta += *dto.Delta
+				s.metricsRepo.SaveOrUpdate(prev)
+				return nil
+			}
+			return ErrParse
+		}
+	default:
+		return ErrTypeNotCorrect
+	}
+
+	return nil
+}
+
+// GetMetric теле ответа должен приходить такой же JSON, но с уже заполненными значениями метрик.
+func (s *Service) GetMetric(metricType string, metricID string) (models.Metric, error) {
+	_, metric, err := s.metricsRepo.FindOneByTypeAndID(metricType, metricID)
+	if err != nil {
+		return models.Metric{}, err
+	}
+
+	//if metric.MType == string(models.Gauge) {
+	//	round := math.Ceil(*metric.Value*1000) / 1000
+	//	metric.Value = &round
+	//}
+	//log.Printf("%v", metric)
+	//log.Println(metric.Value)
+	//log.Println(*metric.Value)
+
+	return metric, nil
+}
+
+func (s *Service) GetMetricValueString(tp, nm string) (string, error) {
+	_, metric, err := s.metricsRepo.FindOneByTypeAndID(tp, nm)
 	if err != nil {
 		return "", err
 	}
 
-	var out string
 	if tp == string(models.Gauge) {
-		flVal, err := strconv.ParseFloat(fmt.Sprintf("%v", metric), 64)
-		if err != nil {
-			return "", ErrParse
-		}
-		out = fmt.Sprintf("%v", math.Round(flVal*1000)/1000)
+		return s.formatToString(tp, *metric.Value)
 	} else {
-		out = fmt.Sprintf("%v", metric)
+		return s.formatToString(tp, *metric.Delta)
 	}
-
-	return out, nil
 }
 
 func (s *Service) GetAllInHTML() string {
@@ -70,15 +116,37 @@ func (s *Service) GetAllInHTML() string {
 
 	html := "<html><head><title>Metric Values</title></head><body><h1>Metric Values:</h1><ul>"
 
-	for metricName, values := range metrics {
-		html += fmt.Sprintf("<li><strong>%s</strong>: <ul>", metricName)
-		for key, value := range values {
-			html += fmt.Sprintf("<li>%s: %v</li>", key, value)
+	for _, metric := range metrics {
+		html += "<li>"
+		html += "<strong>" + metric.ID + ": </strong>"
+		if metric.MType == "counter" {
+			html += fmt.Sprintf("Value: %v", *metric.Delta)
+		} else if metric.MType == "gauge" {
+			html += fmt.Sprintf("Value: %v", utils.FormatFloat(*metric.Value, 3))
 		}
-		html += "</ul></li>"
+		html += "</li>"
 	}
 
 	html += "</ul></body></html>"
 
 	return html
+}
+
+func (s *Service) formatToString(tp string, vl interface{}) (string, error) {
+	switch tp {
+	case string(models.Gauge):
+		flVal, err := strconv.ParseFloat(fmt.Sprintf("%v", vl), 64)
+		if err != nil {
+			return "", ErrParse
+		}
+		return utils.FormatFloat(flVal, 3), nil
+	case string(models.Counter):
+		iVal, err := strconv.ParseInt(fmt.Sprintf("%d", vl), 10, 64)
+		if err != nil {
+			return "", ErrParse
+		}
+		return fmt.Sprintf("%d", iVal), nil
+	default:
+		return fmt.Sprintf("%s", vl), nil
+	}
 }
