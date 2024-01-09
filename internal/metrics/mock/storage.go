@@ -25,10 +25,14 @@ type StorageMock struct {
 	*storage.MemoryStorage
 }
 
-func NewStorageMock() *StorageMock {
-	s := &StorageMock{storage.NewMemoryStorage()}
+func NewStorageMock() (*StorageMock, error) {
+	r, err := storage.NewMemoryStorage("/tmp/metrics-db.json", 300, true)
+	if err != nil {
+		return nil, err
+	}
+	s := &StorageMock{r}
 	s.fillStorage()
-	return s
+	return s, nil
 }
 
 func (s *StorageMock) fillStorage() {

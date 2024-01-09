@@ -3,19 +3,20 @@ package metrics
 import (
 	"github.com/dkmelnik/metrics/internal/logger"
 	"github.com/dkmelnik/metrics/internal/middlewares"
-	"github.com/go-chi/chi/v5"
-
 	"github.com/dkmelnik/metrics/internal/storage"
+	"github.com/go-chi/chi/v5"
 )
 
-func ConfigureRouter() *chi.Mux {
+func ConfigureRouter(storagePath string, storeInterval int, restore bool) (*chi.Mux, error) {
 	r := chi.NewRouter()
 
 	r.Use(logger.Log.RequestLogger)
 
 	//infrastructure
-	store := storage.NewMemoryStorage()
-
+	store, err := storage.NewMemoryStorage(storagePath, storeInterval, restore)
+	if err != nil {
+		return nil, err
+	}
 	//metrics
 	service := NewService(store)
 	metricsHandler := NewHandler(service)
@@ -39,5 +40,5 @@ func ConfigureRouter() *chi.Mux {
 		r.Get("/", metricsHandler.HandleGetAllMetrics)
 	})
 
-	return r
+	return r, nil
 }

@@ -36,10 +36,8 @@ run.server:
 run.agent:
 	docker-compose run --rm --build server sh
 
-tests.server:
+tests.local:
 	docker-compose -f docker-compose.yml -f docker-compose.dev.yml run --rm server go test ./...
 
-tests.agent:
-	docker-compose -f docker-compose.yml -f docker-compose.dev.yml run --rm agent go test ./...
 
 

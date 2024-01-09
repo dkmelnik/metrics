@@ -1,21 +1,40 @@
 package storage
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/dkmelnik/metrics/internal/models"
+	"log"
+	"os"
 	"strings"
 	"sync"
+	"time"
 )
 
 type MemoryStorage struct {
-	mu      sync.RWMutex
-	metrics []models.Metric
+	mu          sync.RWMutex
+	metrics     []models.Metric
+	syncsSaving bool
+	filePath    string
 }
 
-func NewMemoryStorage() *MemoryStorage {
-	return &MemoryStorage{
-		metrics: make([]models.Metric, 0),
+func NewMemoryStorage(storagePath string, storeInterval int, restore bool) (*MemoryStorage, error) {
+	ms := &MemoryStorage{
+		filePath:    storagePath,
+		syncsSaving: storeInterval == 0,
+		metrics:     make([]models.Metric, 0),
 	}
+
+	if restore {
+		ms.loadMetricsFromFile()
+	}
+
+	if storeInterval > 0 {
+		savePeriod := time.NewTicker(time.Second * time.Duration(storeInterval))
+		go ms.intervalUpdatingToFile(savePeriod)
+	}
+
+	return ms, nil
 }
 
 func (ms *MemoryStorage) SaveOrUpdate(metric models.Metric) error {
@@ -34,6 +53,9 @@ func (ms *MemoryStorage) SaveOrUpdate(metric models.Metric) error {
 		if err = ms.UpdateByIDX(idx, prev); err != nil {
 			return err
 		}
+	}
+	if ms.syncsSaving {
+		ms.saveMetricsToFile()
 	}
 	return nil
 }
@@ -68,4 +90,57 @@ func (ms *MemoryStorage) GetAllMetrics() []models.Metric {
 	defer ms.mu.RUnlock()
 
 	return ms.metrics
+}
+
+func (ms *MemoryStorage) intervalUpdatingToFile(t *time.Ticker) {
+	for {
+		select {
+		case <-t.C:
+			ms.saveMetricsToFile()
+		}
+	}
+}
+
+func (ms *MemoryStorage) loadMetricsFromFile() {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+
+	file, err := os.OpenFile(ms.filePath, os.O_RDONLY, 0666)
+	if err != nil {
+		log.Println("Error open file:", err)
+		return
+	}
+	defer file.Close()
+
+	ms.metrics = make([]models.Metric, 0)
+
+	var m []models.Metric
+	decoder := json.NewDecoder(file)
+
+	err = decoder.Decode(&m)
+	if err != nil {
+		log.Println("Error decode from file:", err)
+		return
+	}
+
+	ms.metrics = m
+}
+
+func (ms *MemoryStorage) saveMetricsToFile() {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+	if len(ms.metrics) > 0 {
+		file, err := os.OpenFile(ms.filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+		if err != nil {
+			log.Println("Error opening file:", err)
+			return
+		}
+		defer file.Close()
+		encoder := json.NewEncoder(file)
+		if err := encoder.Encode(ms.metrics); err != nil {
+			log.Println("Error encoding metric:", err)
+			return
+		}
+	}
+
 }

@@ -1,12 +1,11 @@
 package main
 
 import (
-	"github.com/dkmelnik/metrics/internal/logger"
-	"log"
-
 	"github.com/dkmelnik/metrics/configs"
+	"github.com/dkmelnik/metrics/internal/logger"
 	"github.com/dkmelnik/metrics/internal/metrics"
 	"github.com/dkmelnik/metrics/internal/server"
+	"log"
 )
 
 func main() {
@@ -30,7 +29,10 @@ func run() error {
 		return err
 	}
 
-	r := metrics.ConfigureRouter()
+	r, err := metrics.ConfigureRouter(c.FileStoragePath, c.StoreInterval, c.Restore)
+	if err != nil {
+		return err
+	}
 
 	s := server.NewServer(c.Addr, r)
 

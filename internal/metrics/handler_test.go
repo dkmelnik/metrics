@@ -83,8 +83,14 @@ func TestHandler_Create(t *testing.T) {
 			},
 		},
 	}
-	ts := httptest.NewServer(ConfigureRouter())
+
+	r, err := ConfigureRouter("/tmp/metrics-db.json", 300, true)
+	if err != nil {
+		t.Error(err)
+	}
+	ts := httptest.NewServer(r)
 	defer ts.Close()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resp, get := testRequest(t, ts, tt.method, tt.request, nil)
@@ -202,7 +208,10 @@ func TestHandler_Get(t *testing.T) {
 
 	r := chi.NewRouter()
 
-	st := mock.NewStorageMock()
+	st, err := mock.NewStorageMock()
+	if err != nil {
+		t.Error(err)
+	}
 	sr := NewService(st)
 	h := NewHandler(sr)
 
@@ -226,7 +235,11 @@ func TestHandler_Get(t *testing.T) {
 func TestHandler_GetAll(t *testing.T) {
 	r := chi.NewRouter()
 
-	st := mock.NewStorageMock()
+	st, err := mock.NewStorageMock()
+	if err != nil {
+		t.Error(err)
+	}
+	
 	sr := NewService(st)
 	h := NewHandler(sr)
 
@@ -394,8 +407,11 @@ func Test_HandleProcessMetricRequest(t *testing.T) {
 			},
 		},
 	}
-
-	ts := httptest.NewServer(ConfigureRouter())
+	r, err := ConfigureRouter("/tmp/metrics-db.json", 300, true)
+	if err != nil {
+		t.Error(err)
+	}
+	ts := httptest.NewServer(r)
 	defer ts.Close()
 
 	for _, tt := range tests {
