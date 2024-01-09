@@ -94,11 +94,8 @@ func (ms *MemoryStorage) GetAllMetrics() []models.Metric {
 }
 
 func (ms *MemoryStorage) intervalUpdatingToFile(t *time.Ticker) {
-	for {
-		select {
-		case <-t.C:
-			ms.saveMetricsToFile()
-		}
+	for range t.C {
+		ms.saveMetricsToFile()
 	}
 }
 
