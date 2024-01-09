@@ -1,7 +1,10 @@
 package collect
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -32,37 +35,59 @@ func loopMetricsAndSend(md *Metrics, serverURL string) {
 
 		tag := field.Tag.Get("metric")
 		if tag != "" {
-			body := buildCompressRequestBody(tag, field.Name, value.Interface())
+			body, err := buildCompressRequestBody(tag, field.Name, value.Interface())
+			if err != nil {
+				log.Println(err)
+				continue
+			}
 			sendMetricRequest(serverURL, body)
 		}
 	}
 }
 
-func buildCompressRequestBody(mt string, mn string, vl interface{}) map[string]interface{} {
-	m := make(map[string]interface{})
+func buildCompressRequestBody(mt string, mn string, vl interface{}) ([]byte, error) {
+	metric := make(map[string]interface{})
 
-	m["id"] = mn
-	m["type"] = mt
+	metric["id"] = mn
+	metric["type"] = mt
 
 	switch mt {
 	case "gauge":
 		if v, ok := vl.(float64); ok {
-			m["value"] = v
+			metric["value"] = v
 		}
 	case "counter":
 		if v, ok := vl.(int); ok {
-			m["delta"] = v
+			metric["delta"] = v
 		}
 	}
+	var b bytes.Buffer
+	w := gzip.NewWriter(&b)
 
-	return m
+	mtb, err := json.Marshal(metric)
+	if err != nil {
+		return nil, fmt.Errorf("failed marshal data to bytes: %v", err)
+	}
+
+	_, err = w.Write(mtb)
+	if err != nil {
+		return nil, fmt.Errorf("failed write data to compress temporary buffer: %v", err)
+	}
+	err = w.Close()
+	if err != nil {
+		return nil, fmt.Errorf("failed compress data: %v", err)
+	}
+	return b.Bytes(), nil
 }
 
-func sendMetricRequest(url string, body map[string]interface{}) {
+func sendMetricRequest(url string, body []byte) {
 	client := resty.New()
 
 	resp, err := client.R().
-		SetHeader("Content-Type", "application/json").
+		SetHeaders(map[string]string{
+			"Content-Type":     "application/json",
+			"Content-Encoding": "gzip",
+		}).
 		SetBody(body).
 		Post(fmt.Sprintf("%s/update/", url))
 
