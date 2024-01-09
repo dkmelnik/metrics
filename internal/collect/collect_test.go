@@ -3,7 +3,6 @@ package collect
 import (
 	"context"
 	"github.com/stretchr/testify/assert"
-	"log"
 	"testing"
 	"time"
 )
@@ -17,17 +16,17 @@ func TestCollect(t *testing.T) {
 
 	go Collect(ctx, mockTicker, metricsChan)
 
-	time.Sleep(800 * time.Millisecond)
-
-	mockTicker.Stop()
-	cancel()
+	time.AfterFunc(1*time.Second, func() {
+		mockTicker.Stop()
+		cancel()
+	})
 
 	metricsReceived := make([]*Metrics, 0)
 	for metric := range metricsChan {
-		log.Printf("%v", metric)
 		metricsReceived = append(metricsReceived, metric)
 	}
+
 	assert.NotEmpty(t, metricsReceived, "Metrics need to be collected")
-	//assert.Equal(t, 5, 2, "At least 3 dimensions")
-	//assert.Equal(t, 5, metricsReceived[len(metricsReceived)].PollCount, "The number of collect updates should be equivalent")
+	assert.Equal(t, 10, len(metricsReceived), "At least 10 dimensions")
+	assert.Equal(t, 10, metricsReceived[len(metricsReceived)-1].PollCount, "The number of collect updates should be equivalent")
 }
