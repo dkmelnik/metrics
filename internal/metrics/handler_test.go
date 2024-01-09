@@ -32,7 +32,7 @@ func testRequest(t *testing.T, ts *httptest.Server, method,
 	return resp, string(respBody)
 }
 
-func TestHandler_Create(t *testing.T) {
+func Test_HandleRecordMetricValue(t *testing.T) {
 	type want struct {
 		code        int
 		response    string
@@ -104,7 +104,7 @@ func TestHandler_Create(t *testing.T) {
 	}
 }
 
-func TestHandler_Get(t *testing.T) {
+func Test_HandleGetMetricValue(t *testing.T) {
 	type want struct {
 		code        int
 		response    string
@@ -234,7 +234,7 @@ func TestHandler_Get(t *testing.T) {
 	}
 }
 
-func TestHandler_GetAll(t *testing.T) {
+func Test_HandleGetAllMetrics(t *testing.T) {
 	r := chi.NewRouter()
 
 	st, err := mock.NewStorageMock()
