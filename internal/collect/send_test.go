@@ -1,7 +1,10 @@
 package collect
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
+	"encoding/json"
 	"github.com/dkmelnik/metrics/internal/models"
 	"github.com/stretchr/testify/assert"
 	"log"
@@ -9,29 +12,43 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"runtime"
-	"strings"
 	"testing"
 	"time"
 )
 
-func TestSend(t *testing.T) {
+func Test_Send(t *testing.T) {
 	metricsNames := make([]string, 0)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println(r.URL.Path)
-		parts := strings.Split(r.URL.Path, "/")
-		metricsNames = append(metricsNames, parts[3])
+		var data models.Metric
+
+		if r.Header.Get(`Content-Encoding`) == `gzip` {
+			gz, err := gzip.NewReader(r.Body)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			r.Body = gz
+			defer gz.Close()
+		}
+
+		err := json.NewDecoder(r.Body).Decode(&data)
+		if err != nil {
+			log.Println("Error decoding request body:", err)
+			http.Error(w, "Error decoding request body", http.StatusBadRequest)
+			return
+		}
+
+		metricsNames = append(metricsNames, data.ID)
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	defer server.Close()
 
-	md := &models.Metrics{}
-
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 
-	*md = models.Metrics{
+	md := &Metrics{
 		Alloc:         float64(m.Alloc),
 		TotalAlloc:    float64(m.TotalAlloc),
 		Sys:           float64(m.Sys),
@@ -63,27 +80,87 @@ func TestSend(t *testing.T) {
 		RandomValue:   rand.Float64(),
 	}
 
-	sendPeriod := time.NewTicker(time.Millisecond * 50)
-	defer sendPeriod.Stop()
+	metricsChan := make(chan *Metrics)
+
+	sendPeriod := time.NewTicker(100 * time.Millisecond)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
-	go Send(ctx, sendPeriod, md, server.URL)
+	go Send(ctx, sendPeriod, metricsChan, server.URL)
 
-	time.Sleep(time.Millisecond * 98)
+	metricsChan <- md
+
+	time.Sleep(1500 * time.Millisecond) // Дожидаемся отправки данных
+
+	sendPeriod.Stop()
+	cancel()
 
 	assert.ElementsMatch(t, md.GetProperties(), metricsNames, "each of the collect must be sent")
 }
 
-func TestBuildRequestURL(t *testing.T) {
-	serverURL := "http://example.com"
-	tag := "gauge"
-	fieldName := "Alloc"
-	value := "243288"
+func Test_BuildRequestBody(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		metric   string
+		name     string
+		value    interface{}
+		expected map[string]interface{}
+	}{
+		{
+			desc:   "Build gauge request body",
+			metric: "gauge",
+			name:   "some_metric_name",
+			value:  25.5,
+			expected: map[string]interface{}{
+				"id":    "some_metric_name",
+				"type":  "gauge",
+				"value": 25.5,
+			},
+		},
+		{
+			desc:   "Build counter request body",
+			metric: "counter",
+			name:   "another_metric_name",
+			value:  10,
+			expected: map[string]interface{}{
+				"id":    "another_metric_name",
+				"type":  "counter",
+				"delta": 10,
+			},
+		},
+		{
+			desc:   "Invalid value type",
+			metric: "gauge",
+			name:   "invalid_metric",
+			value:  "invalid_value",
+			expected: map[string]interface{}{
+				"id":   "invalid_metric",
+				"type": "gauge",
+			},
+		},
+	}
 
-	expectedURL := "http://example.com/update/gauge/Alloc/243288"
-	result := buildRequestURL(serverURL, tag, fieldName, value)
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			result, err := buildCompressRequestBody(tc.metric, tc.name, tc.value)
+			if err != nil {
+				t.Error(err)
+			}
 
-	assert.Equal(t, expectedURL, result)
+			gz, err := gzip.NewReader(bytes.NewReader(result))
+			if err != nil {
+				t.Error(err)
+			}
+			defer gz.Close()
+
+			var decompressed bytes.Buffer
+			_, err = decompressed.ReadFrom(gz)
+			if err != nil {
+				t.Error(err)
+			}
+
+			expectedJSON, _ := json.Marshal(tc.expected)
+			assert.JSONEq(t, string(expectedJSON), decompressed.String())
+		})
+	}
 }

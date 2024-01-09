@@ -5,23 +5,22 @@ import (
 	"math/rand"
 	"runtime"
 	"time"
-
-	"github.com/dkmelnik/metrics/internal/models"
 )
 
-func Collect(ctx context.Context, t *time.Ticker, md *models.Metrics) {
+func Collect(ctx context.Context, t *time.Ticker, ch chan<- *Metrics) {
 	var m runtime.MemStats
 	pollCount := 0
 
 	for {
 		select {
 		case <-ctx.Done():
+			close(ch)
 			return
 		case <-t.C:
 			pollCount++
 
 			runtime.ReadMemStats(&m)
-			*md = models.Metrics{
+			ch <- &Metrics{
 				Alloc:         float64(m.Alloc),
 				TotalAlloc:    float64(m.TotalAlloc),
 				Sys:           float64(m.Sys),

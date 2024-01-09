@@ -23,22 +23,18 @@ func NewServer(addr string, r http.Handler) *Server {
 }
 
 func (s *Server) Run() error {
-	go s.shutdown()
+	serverCtx, serverStopCtx := context.WithCancel(context.Background())
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGTSTP)
+	go func() {
+		<-sig
+		err := s.app.Shutdown(serverCtx)
+		if err != nil {
+			panic(err)
+		}
+		serverStopCtx()
+	}()
 
 	return s.app.ListenAndServe()
-}
-
-// shutdown listens for signals and stops the server if they arrive
-func (s *Server) shutdown() error {
-	quit := make(chan os.Signal, 1)
-
-	// kill -15 <PID>, Ctrl-Z
-	signal.Notify(quit, syscall.SIGTERM, syscall.SIGTSTP)
-
-	<-quit
-
-	ctx, clFunc := context.WithTimeout(context.Background(), 2*time.Second)
-	defer clFunc()
-
-	return s.app.Shutdown(ctx)
 }
