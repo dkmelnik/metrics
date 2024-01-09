@@ -2,16 +2,18 @@ package metrics
 
 import (
 	"fmt"
-	"github.com/dkmelnik/metrics/internal/metrics/mock"
-	"github.com/go-chi/chi/v5"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"io"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/dkmelnik/metrics/internal/metrics/mock"
 )
 
 func testRequest(t *testing.T, ts *httptest.Server, method,
@@ -239,7 +241,7 @@ func TestHandler_GetAll(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	
+
 	sr := NewService(st)
 	h := NewHandler(sr)
 

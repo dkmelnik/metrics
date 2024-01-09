@@ -1,10 +1,11 @@
 package metrics
 
 import (
+	"github.com/go-chi/chi/v5"
+
 	"github.com/dkmelnik/metrics/internal/logger"
 	"github.com/dkmelnik/metrics/internal/middlewares"
 	"github.com/dkmelnik/metrics/internal/storage"
-	"github.com/go-chi/chi/v5"
 )
 
 func ConfigureRouter(storagePath string, storeInterval int, restore bool) (*chi.Mux, error) {

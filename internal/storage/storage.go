@@ -3,12 +3,13 @@ package storage
 import (
 	"encoding/json"
 	"errors"
-	"github.com/dkmelnik/metrics/internal/models"
 	"log"
 	"os"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/dkmelnik/metrics/internal/models"
 )
 
 type MemoryStorage struct {

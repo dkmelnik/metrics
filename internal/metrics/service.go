@@ -2,10 +2,11 @@ package metrics
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/dkmelnik/metrics/internal/metrics/interfaces"
 	"github.com/dkmelnik/metrics/internal/models"
 	"github.com/dkmelnik/metrics/internal/utils"
-	"strconv"
 )
 
 type Service struct {

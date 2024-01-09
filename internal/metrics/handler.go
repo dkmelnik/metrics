@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dkmelnik/metrics/internal/models"
 	"net/http"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+
+	"github.com/dkmelnik/metrics/internal/models"
 )
 
 type Handler struct {
