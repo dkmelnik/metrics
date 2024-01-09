@@ -160,7 +160,7 @@ func Test_BuildRequestBody(t *testing.T) {
 			}
 
 			expectedJSON, _ := json.Marshal(tc.expected)
-			assert.JSONEq(t, string(expectedJSON), string(decompressed.Bytes()))
+			assert.JSONEq(t, string(expectedJSON), decompressed.String())
 		})
 	}
 }
