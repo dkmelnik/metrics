@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/dkmelnik/metrics/internal/metrics/dto/metric"
 	"github.com/dkmelnik/metrics/internal/models"
 )
 
@@ -20,7 +21,7 @@ func NewHandler(s *Service) *Handler {
 	return &Handler{s}
 }
 
-func (h *Handler) HandleRecordMetricValue(rw http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateOrUpdateByParams(rw http.ResponseWriter, r *http.Request) {
 	metricsType := chi.URLParam(r, "type")
 	metricsName := chi.URLParam(r, "name")
 	metricsVal := chi.URLParam(r, "value")
@@ -48,9 +49,13 @@ func (h *Handler) HandleRecordMetricValue(rw http.ResponseWriter, r *http.Reques
 	}
 }
 
-func (h *Handler) HandleProcessMetricRequest(rw http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateOrUpdateByJSON(rw http.ResponseWriter, r *http.Request) {
 	var body models.Metric
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	if body.Delta == nil && body.Value == nil {
 		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
@@ -80,8 +85,8 @@ func (h *Handler) HandleProcessMetricRequest(rw http.ResponseWriter, r *http.Req
 	}
 }
 
-func (h *Handler) HandleGetMetric(rw http.ResponseWriter, r *http.Request) {
-	var body GetMetricRequest
+func (h *Handler) GetMetric(rw http.ResponseWriter, r *http.Request) {
+	var body metric.GetRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -112,7 +117,7 @@ func (h *Handler) HandleGetMetric(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) HandleGetMetricValue(rw http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetMetricValue(rw http.ResponseWriter, r *http.Request) {
 	metricsType := chi.URLParam(r, "type")
 	metricsName := chi.URLParam(r, "name")
 	value, err := h.service.GetMetricValueString(metricsType, metricsName)
@@ -134,7 +139,7 @@ func (h *Handler) HandleGetMetricValue(rw http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func (h *Handler) HandleGetAllMetrics(rw http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetAllMetrics(rw http.ResponseWriter, r *http.Request) {
 	metrics := h.service.GetAllInHTML()
 	b := []byte(metrics)
 	rw.Header().Set("Content-Type", http.DetectContentType(b))

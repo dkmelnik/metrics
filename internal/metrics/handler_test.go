@@ -1,12 +1,14 @@
 package metrics
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"github.com/dkmelnik/metrics/configs"
 	"io"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
@@ -17,9 +19,10 @@ import (
 )
 
 func testRequest(t *testing.T, ts *httptest.Server, method,
-	path string, body []byte) (*http.Response, string) {
+	path string, body map[string]interface{}) (*http.Response, string) {
+	bts, _ := json.Marshal(body)
 
-	req, err := http.NewRequest(method, ts.URL+path, strings.NewReader(string(body)))
+	req, err := http.NewRequest(method, ts.URL+path, bytes.NewReader(bts))
 	require.NoError(t, err)
 
 	resp, err := ts.Client().Do(req)
@@ -32,7 +35,7 @@ func testRequest(t *testing.T, ts *httptest.Server, method,
 	return resp, string(respBody)
 }
 
-func Test_HandleRecordMetricValue(t *testing.T) {
+func Test_CreateOrUpdateByParams(t *testing.T) {
 	type want struct {
 		code        int
 		response    string
@@ -86,7 +89,7 @@ func Test_HandleRecordMetricValue(t *testing.T) {
 		},
 	}
 
-	r, err := ConfigureRouter("/tmp/metrics-db.json", 300, true)
+	r, err := ConfigureRouter(configs.Storage{FileStoragePath: "/tmp/metrics-db.json", StoreInterval: 10, Restore: false})
 	if err != nil {
 		t.Error(err)
 	}
@@ -104,7 +107,176 @@ func Test_HandleRecordMetricValue(t *testing.T) {
 	}
 }
 
-func Test_HandleGetMetricValue(t *testing.T) {
+func Test_CreateOrUpdateByJSON(t *testing.T) {
+	type want struct {
+		code        int
+		response    string
+		contentType string
+	}
+
+	tests := []struct {
+		name    string
+		body    map[string]interface{}
+		method  string
+		want    want
+		wantErr bool
+	}{
+		{
+			name:    "negative test #1, empty body",
+			body:    nil,
+			method:  http.MethodPost,
+			wantErr: true,
+			want: want{
+				code:        http.StatusBadRequest,
+				response:    http.StatusText(http.StatusBadRequest) + "\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+		{
+			name: "negative test #2, empty type",
+			body: map[string]interface{}{
+				"id":    "testCounter",
+				"delta": 1,
+			},
+			method:  http.MethodPost,
+			wantErr: true,
+			want: want{
+				code:        http.StatusBadRequest,
+				response:    http.StatusText(http.StatusBadRequest) + "\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+		{
+			name: "negative test #3, incorrect type",
+			body: map[string]interface{}{
+				"id":    "testCounter",
+				"type":  "none",
+				"delta": 1,
+			},
+			method:  http.MethodPost,
+			wantErr: true,
+			want: want{
+				code:        http.StatusBadRequest,
+				response:    http.StatusText(http.StatusBadRequest) + "\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+		{
+			name: "negative test #4, counter type incorrect delta",
+			body: map[string]interface{}{
+				"id":    "testCounter",
+				"type":  "counter",
+				"delta": "none",
+			},
+			method:  http.MethodPost,
+			wantErr: true,
+			want: want{
+				code:        http.StatusBadRequest,
+				response:    http.StatusText(http.StatusBadRequest) + "\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+		{
+			name: "negative test #4, gauge type incorrect value",
+			body: map[string]interface{}{
+				"id":    "LastGC",
+				"type":  "gauge",
+				"value": "none",
+			},
+			method:  http.MethodPost,
+			wantErr: true,
+			want: want{
+				code:        http.StatusBadRequest,
+				response:    http.StatusText(http.StatusBadRequest) + "\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		}, {
+			name: "negative test #5, gauge type empty value",
+			body: map[string]interface{}{
+				"id":   "LastGC",
+				"type": "gauge",
+			},
+			method:  http.MethodPost,
+			wantErr: true,
+			want: want{
+				code:        http.StatusBadRequest,
+				response:    http.StatusText(http.StatusBadRequest) + "\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		}, {
+			name: "negative test #6, counter type empty delta",
+			body: map[string]interface{}{
+				"id":   "TestCounter",
+				"type": "counter",
+			},
+			method:  http.MethodPost,
+			wantErr: true,
+			want: want{
+				code:        http.StatusBadRequest,
+				response:    http.StatusText(http.StatusBadRequest) + "\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		}, {
+			name: "positive test 7, gauge type return json",
+			body: map[string]interface{}{
+				"id":    "LastGC",
+				"type":  "gauge",
+				"value": 10.123123,
+			},
+			method:  http.MethodPost,
+			wantErr: false,
+			want: want{
+				code: http.StatusOK,
+				response: `{
+					"id": "LastGC",
+					"type": "gauge",
+					"value": 10.123123
+				}`,
+				contentType: "application/json",
+			},
+		}, {
+			name: "positive test #8, counter type return json",
+			body: map[string]interface{}{
+				"id":    "TestCounter",
+				"type":  "counter",
+				"delta": 1,
+			},
+			method:  http.MethodPost,
+			wantErr: false,
+			want: want{
+				code: http.StatusOK,
+				response: `{
+					"id": "TestCounter",
+					"type": "counter",
+					"delta": 1
+				}`,
+				contentType: "application/json",
+			},
+		},
+	}
+	r, err := ConfigureRouter(configs.Storage{FileStoragePath: "/tmp/metrics-db.json", StoreInterval: 10, Restore: false})
+	if err != nil {
+		t.Error(err)
+	}
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, get := testRequest(t, ts, tt.method, "/update/", tt.body)
+			defer resp.Body.Close()
+
+			assert.Equal(t, tt.want.code, resp.StatusCode)
+			if tt.wantErr {
+				assert.Equal(t, tt.want.response, get)
+			} else {
+				assert.JSONEq(t, tt.want.response, get)
+			}
+		})
+	}
+}
+
+func Test_GetMetricValue(t *testing.T) {
 	type want struct {
 		code        int
 		response    string
@@ -217,7 +389,7 @@ func Test_HandleGetMetricValue(t *testing.T) {
 	sr := NewService(st)
 	h := NewHandler(sr)
 
-	r.Get("/value/{type}/{name}", h.HandleGetMetricValue)
+	r.Get("/value/{type}/{name}", h.GetMetricValue)
 
 	ts := httptest.NewServer(r)
 	defer ts.Close()
@@ -234,7 +406,122 @@ func Test_HandleGetMetricValue(t *testing.T) {
 	}
 }
 
-func Test_HandleGetAllMetrics(t *testing.T) {
+func Test_GetMetric(t *testing.T) {
+	type want struct {
+		code        int
+		response    string
+		contentType string
+	}
+
+	tests := []struct {
+		name    string
+		body    map[string]interface{}
+		method  string
+		want    want
+		wantErr bool
+	}{
+		{
+			name: "negative test #1, incorrect body",
+			body: map[string]interface{}{
+				"id":   1223,
+				"type": 1435,
+			},
+			method:  http.MethodPost,
+			wantErr: true,
+			want: want{
+				code:        http.StatusBadRequest,
+				response:    http.StatusText(http.StatusBadRequest) + "\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+		{
+			name: "negative test #2, empty type, record not found",
+			body: map[string]interface{}{
+				"id": "testCounter",
+			},
+			method:  http.MethodPost,
+			wantErr: true,
+			want: want{
+				code:        http.StatusNotFound,
+				response:    http.StatusText(http.StatusNotFound) + "\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+		{
+			name: "negative test #3, incorrect type, record not found",
+			body: map[string]interface{}{
+				"id":   "testCounter",
+				"type": "none",
+			},
+			method:  http.MethodPost,
+			wantErr: true,
+			want: want{
+				code:        http.StatusNotFound,
+				response:    http.StatusText(http.StatusNotFound) + "\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+		{
+			name: "negative test #4, empty id, record not found",
+			body: map[string]interface{}{
+				"type": "counter",
+			},
+			method:  http.MethodPost,
+			wantErr: true,
+			want: want{
+				code:        http.StatusNotFound,
+				response:    http.StatusText(http.StatusNotFound) + "\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		}, {
+			name: "positive test #5, counter type return json",
+			body: map[string]interface{}{
+				"id":   "PollCount",
+				"type": "counter",
+			},
+			method:  http.MethodPost,
+			wantErr: false,
+			want: want{
+				code: http.StatusOK,
+				response: `{
+					"id": "PollCount",
+					"type": "counter",
+					"delta": 14123413542
+				}`,
+				contentType: "application/json",
+			},
+		},
+	}
+	r := chi.NewRouter()
+
+	st, err := mock.NewStorageMock()
+	if err != nil {
+		t.Error(err)
+	}
+	sr := NewService(st)
+	h := NewHandler(sr)
+
+	r.Post("/value/", h.GetMetric)
+
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, get := testRequest(t, ts, tt.method, "/value/", tt.body)
+			defer resp.Body.Close()
+
+			assert.Equal(t, tt.want.code, resp.StatusCode)
+			if tt.wantErr {
+				assert.Equal(t, tt.want.response, get)
+			} else {
+				assert.JSONEq(t, tt.want.response, get)
+			}
+		})
+	}
+}
+
+func Test_GetAllMetrics(t *testing.T) {
 	r := chi.NewRouter()
 
 	st, err := mock.NewStorageMock()
@@ -245,7 +532,7 @@ func Test_HandleGetAllMetrics(t *testing.T) {
 	sr := NewService(st)
 	h := NewHandler(sr)
 
-	r.Get("/", h.HandleGetAllMetrics)
+	r.Get("/", h.GetAllMetrics)
 
 	ts := httptest.NewServer(r)
 	defer ts.Close()
@@ -258,175 +545,4 @@ func Test_HandleGetAllMetrics(t *testing.T) {
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		assert.Equal(t, "text/html; charset=utf-8", resp.Header.Get("Content-Type"))
 	})
-}
-
-func Test_HandleProcessMetricRequest(t *testing.T) {
-	type want struct {
-		code        int
-		response    string
-		contentType string
-	}
-
-	tests := []struct {
-		name    string
-		body    []byte
-		method  string
-		want    want
-		wantErr bool
-	}{
-		{
-			name: "negative test #1, empty body",
-			body: []byte(`{
-				
-			}`),
-			method:  http.MethodPost,
-			wantErr: true,
-			want: want{
-				code:        http.StatusBadRequest,
-				response:    http.StatusText(http.StatusBadRequest) + "\n",
-				contentType: "text/plain; charset=utf-8",
-			},
-		},
-		{
-			name: "negative test #2, empty type",
-			body: []byte(`{
-				"id": "testCounter",
-				"delta": 1
-			}`),
-			method:  http.MethodPost,
-			wantErr: true,
-			want: want{
-				code:        http.StatusBadRequest,
-				response:    http.StatusText(http.StatusBadRequest) + "\n",
-				contentType: "text/plain; charset=utf-8",
-			},
-		},
-		{
-			name: "negative test #3, incorrect type",
-			body: []byte(`{
-				"id": "testCounter",
-    			"type": "none",
-				"delta": 1
-			}`),
-			method:  http.MethodPost,
-			wantErr: true,
-			want: want{
-				code:        http.StatusBadRequest,
-				response:    http.StatusText(http.StatusBadRequest) + "\n",
-				contentType: "text/plain; charset=utf-8",
-			},
-		},
-		{
-			name: "negative test #4, counter type incorrect delta",
-			body: []byte(`{
-				"id": "testCounter",
-    			"type": "counter",
-				"delta": "none"
-			}`),
-			method:  http.MethodPost,
-			wantErr: true,
-			want: want{
-				code:        http.StatusBadRequest,
-				response:    http.StatusText(http.StatusBadRequest) + "\n",
-				contentType: "text/plain; charset=utf-8",
-			},
-		},
-		{
-			name: "negative test #4, gauge type incorrect value",
-			body: []byte(`{
-				"id": "LastGC",
-    			"type": "gauge",
-				"value": "none"
-			}`),
-			method:  http.MethodPost,
-			wantErr: true,
-			want: want{
-				code:        http.StatusBadRequest,
-				response:    http.StatusText(http.StatusBadRequest) + "\n",
-				contentType: "text/plain; charset=utf-8",
-			},
-		}, {
-			name: "negative test #5, gauge type empty value",
-			body: []byte(`{
-				"id": "LastGC",
-    			"type": "gauge",
-			}`),
-			method:  http.MethodPost,
-			wantErr: true,
-			want: want{
-				code:        http.StatusBadRequest,
-				response:    http.StatusText(http.StatusBadRequest) + "\n",
-				contentType: "text/plain; charset=utf-8",
-			},
-		}, {
-			name: "negative test #6, counter type empty delta",
-			body: []byte(`{
-				"id": "TestCounter",
-    			"type": "counter",
-			}`),
-			method:  http.MethodPost,
-			wantErr: true,
-			want: want{
-				code:        http.StatusBadRequest,
-				response:    http.StatusText(http.StatusBadRequest) + "\n",
-				contentType: "text/plain; charset=utf-8",
-			},
-		}, {
-			name: "positive test 7, gauge type return json",
-			body: []byte(`{
-				"id": "LastGC",
-    			"type": "gauge",
-				"value": 10.123123
-			}`),
-			method:  http.MethodPost,
-			wantErr: false,
-			want: want{
-				code: http.StatusOK,
-				response: `{
-					"id": "LastGC",
-					"type": "gauge",
-					"value": 10.123123
-				}`,
-				contentType: "application/json",
-			},
-		}, {
-			name: "positive test #8, counter type return json",
-			body: []byte(`{
-				"id": "TestCounter",
-    			"type": "counter",
-				"delta": 1
-			}`),
-			method:  http.MethodPost,
-			wantErr: false,
-			want: want{
-				code: http.StatusOK,
-				response: `{
-					"id": "TestCounter",
-					"type": "counter",
-					"delta": 1
-				}`,
-				contentType: "application/json",
-			},
-		},
-	}
-	r, err := ConfigureRouter("/tmp/metrics-db.json", 300, true)
-	if err != nil {
-		t.Error(err)
-	}
-	ts := httptest.NewServer(r)
-	defer ts.Close()
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			resp, get := testRequest(t, ts, tt.method, "/update/", tt.body)
-			defer resp.Body.Close()
-
-			assert.Equal(t, tt.want.code, resp.StatusCode)
-			if tt.wantErr {
-				assert.Equal(t, tt.want.response, get)
-			} else {
-				assert.JSONEq(t, tt.want.response, get)
-			}
-		})
-	}
 }

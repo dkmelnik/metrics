@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"github.com/dkmelnik/metrics/configs"
 	"github.com/go-chi/chi/v5"
 
 	"github.com/dkmelnik/metrics/internal/logger"
@@ -8,13 +9,13 @@ import (
 	"github.com/dkmelnik/metrics/internal/storage"
 )
 
-func ConfigureRouter(storagePath string, storeInterval int, restore bool) (*chi.Mux, error) {
+func ConfigureRouter(c configs.Storage) (*chi.Mux, error) {
 	r := chi.NewRouter()
 
 	r.Use(logger.Log.RequestLogger)
 
 	//infrastructure
-	store, err := storage.NewMemoryStorage(storagePath, storeInterval, restore)
+	store, err := storage.NewMemoryStorage(c.FileStoragePath, c.StoreInterval, c.Restore)
 	if err != nil {
 		return nil, err
 	}
@@ -22,23 +23,23 @@ func ConfigureRouter(storagePath string, storeInterval int, restore bool) (*chi.
 	service := NewService(store)
 	metricsHandler := NewHandler(service)
 
-	r.Post("/update/{type}/{name}/{value}", metricsHandler.HandleRecordMetricValue)
+	r.Post("/update/{type}/{name}/{value}", metricsHandler.CreateOrUpdateByParams)
 
 	r.Route("/update/", func(r chi.Router) {
 		r.Use(middlewares.Compress)
-		r.Post("/", metricsHandler.HandleProcessMetricRequest)
+		r.Post("/", metricsHandler.CreateOrUpdateByJSON)
 	})
 
-	r.Get("/value/{type}/{name}", metricsHandler.HandleGetMetricValue)
+	r.Get("/value/{type}/{name}", metricsHandler.GetMetricValue)
 
 	r.Route("/value/", func(r chi.Router) {
 		r.Use(middlewares.Compress)
-		r.Post("/", metricsHandler.HandleGetMetric)
+		r.Post("/", metricsHandler.GetMetric)
 	})
 
 	r.Route("/", func(r chi.Router) {
 		r.Use(middlewares.Compress)
-		r.Get("/", metricsHandler.HandleGetAllMetrics)
+		r.Get("/", metricsHandler.GetAllMetrics)
 	})
 
 	return r, nil
