@@ -7,6 +7,11 @@ services:
       context: .
       dockerfile: docker/Dockerfile-agent
       target: production
+    environment:
+      - LOG_LEVEL=info
+      - ADDRESS=http://localhost:8080
+      - REPORT_INTERVAL=10
+      - POLL_INTERVAL=2
     ports:
       - "80:8080"
 
@@ -17,6 +22,12 @@ services:
       context: .
       dockerfile: docker/Dockerfile-server
       target: production
+    environment:
+      - LOG_LEVEL=info
+      - ADDRESS=0.0.0.0:8080
+      - FILE_STORAGE_PATH=/app/tmp/metrics-db.json
+      - RESTORE=true
+      - STORE_INTERVAL=10
     ports:
       - "81:8080"
 
