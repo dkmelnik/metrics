@@ -8,6 +8,7 @@ import (
 	"github.com/dkmelnik/metrics/internal/storage"
 )
 
+// TODO Тут наверное нужна структура
 func ConfigureRouter(storagePath string, storeInterval int, restore bool) (*chi.Mux, error) {
 	r := chi.NewRouter()
 

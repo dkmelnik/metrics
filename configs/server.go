@@ -13,10 +13,8 @@ type Server struct {
 }
 
 func NewServer() Server {
-	return Server{}
-}
+	cb := Server{}
 
-func (cb Server) Build() Server {
 	flag.StringVar(&cb.Addr, "a", "0.0.0.0:8080", "in the form host:port. If empty, 0.0.0.0:8080 is used")
 	flag.StringVar(&cb.LogLevel, "l", "warn", "logging level. If empty, warn is used")
 	flag.StringVar(&cb.FileStoragePath, "f", "/tmp/metrics-db.json", "full name of the file where the current values are saved. If empty, /tmp/metrics-db.json is used")

@@ -24,7 +24,7 @@ func run() error {
 		return err
 	}
 
-	c := configs.NewServer().Build()
+	c := configs.NewServer()
 
 	if err := logger.Initialize(c.LogLevel); err != nil {
 		return err

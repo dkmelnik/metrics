@@ -22,7 +22,7 @@ func run() error {
 		return err
 	}
 
-	c := configs.NewAgent().Build()
+	c := configs.NewAgent()
 
 	metricsChan := make(chan *collect.Metrics)
 

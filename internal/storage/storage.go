@@ -19,6 +19,8 @@ type MemoryStorage struct {
 	filePath    string
 }
 
+// TODO обработать все ошибки
+
 func NewMemoryStorage(storagePath string, storeInterval int, restore bool) (*MemoryStorage, error) {
 	ms := &MemoryStorage{
 		filePath:    storagePath,

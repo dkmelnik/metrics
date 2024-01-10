@@ -32,6 +32,8 @@ func testRequest(t *testing.T, ts *httptest.Server, method,
 	return resp, string(respBody)
 }
 
+// TODO написать тесты для каждого из обработчиков
+
 func Test_HandleRecordMetricValue(t *testing.T) {
 	type want struct {
 		code        int

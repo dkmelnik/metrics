@@ -20,6 +20,8 @@ func NewHandler(s *Service) *Handler {
 	return &Handler{s}
 }
 
+// TODO переименовть все методы
+
 func (h *Handler) HandleRecordMetricValue(rw http.ResponseWriter, r *http.Request) {
 	metricsType := chi.URLParam(r, "type")
 	metricsName := chi.URLParam(r, "name")
