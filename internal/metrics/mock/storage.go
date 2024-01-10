@@ -26,7 +26,7 @@ type StorageMock struct {
 }
 
 func NewStorageMock() (*StorageMock, error) {
-	r, err := storage.NewMemoryStorage("/tmp/metrics-db.json", 300, true)
+	r, err := storage.NewMemoryStorage("/tmp/metrics-db.json", 300, false)
 	if err != nil {
 		return nil, err
 	}

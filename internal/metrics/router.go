@@ -23,23 +23,23 @@ func ConfigureRouter(c configs.Storage) (*chi.Mux, error) {
 	service := NewService(store)
 	metricsHandler := NewHandler(service)
 
-	r.Post("/update/{type}/{name}/{value}", metricsHandler.HandleRecordMetricValue)
+	r.Post("/update/{type}/{name}/{value}", metricsHandler.CreateOrUpdateByParams)
 
 	r.Route("/update/", func(r chi.Router) {
 		r.Use(middlewares.Compress)
-		r.Post("/", metricsHandler.HandleProcessMetricRequest)
+		r.Post("/", metricsHandler.CreateOrUpdateByJSON)
 	})
 
-	r.Get("/value/{type}/{name}", metricsHandler.HandleGetMetricValue)
+	r.Get("/value/{type}/{name}", metricsHandler.GetMetricValue)
 
 	r.Route("/value/", func(r chi.Router) {
 		r.Use(middlewares.Compress)
-		r.Post("/", metricsHandler.HandleGetMetric)
+		r.Post("/", metricsHandler.GetMetric)
 	})
 
 	r.Route("/", func(r chi.Router) {
 		r.Use(middlewares.Compress)
-		r.Get("/", metricsHandler.HandleGetAllMetrics)
+		r.Get("/", metricsHandler.GetAllMetrics)
 	})
 
 	return r, nil

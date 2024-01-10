@@ -1,6 +1,6 @@
 package metric
 
-type GetMetricRequest struct {
+type GetRequest struct {
 	ID    string `json:"id"`
 	MType string `json:"type"`
 }
