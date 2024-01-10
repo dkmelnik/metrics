@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/dkmelnik/metrics/internal/metrics/dto/metric"
 	"github.com/dkmelnik/metrics/internal/models"
 )
 
@@ -83,7 +84,7 @@ func (h *Handler) HandleProcessMetricRequest(rw http.ResponseWriter, r *http.Req
 }
 
 func (h *Handler) HandleGetMetric(rw http.ResponseWriter, r *http.Request) {
-	var body GetMetricRequest
+	var body metric.GetMetricRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
