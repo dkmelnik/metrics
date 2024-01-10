@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"fmt"
+	"github.com/dkmelnik/metrics/configs"
 	"io"
 	"math/rand"
 	"net/http"
@@ -88,7 +89,7 @@ func Test_HandleRecordMetricValue(t *testing.T) {
 		},
 	}
 
-	r, err := ConfigureRouter("/tmp/metrics-db.json", 300, true)
+	r, err := ConfigureRouter(configs.Storage{FileStoragePath: "/tmp/metrics-db.json", StoreInterval: 10, Restore: false})
 	if err != nil {
 		t.Error(err)
 	}
@@ -411,7 +412,7 @@ func Test_HandleProcessMetricRequest(t *testing.T) {
 			},
 		},
 	}
-	r, err := ConfigureRouter("/tmp/metrics-db.json", 300, true)
+	r, err := ConfigureRouter(configs.Storage{FileStoragePath: "/tmp/metrics-db.json", StoreInterval: 10, Restore: false})
 	if err != nil {
 		t.Error(err)
 	}

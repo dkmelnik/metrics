@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"github.com/dkmelnik/metrics/configs"
 	"github.com/go-chi/chi/v5"
 
 	"github.com/dkmelnik/metrics/internal/logger"
@@ -8,14 +9,13 @@ import (
 	"github.com/dkmelnik/metrics/internal/storage"
 )
 
-// TODO Тут наверное нужна структура
-func ConfigureRouter(storagePath string, storeInterval int, restore bool) (*chi.Mux, error) {
+func ConfigureRouter(c configs.Storage) (*chi.Mux, error) {
 	r := chi.NewRouter()
 
 	r.Use(logger.Log.RequestLogger)
 
 	//infrastructure
-	store, err := storage.NewMemoryStorage(storagePath, storeInterval, restore)
+	store, err := storage.NewMemoryStorage(c.FileStoragePath, c.StoreInterval, c.Restore)
 	if err != nil {
 		return nil, err
 	}

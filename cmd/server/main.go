@@ -30,7 +30,7 @@ func run() error {
 		return err
 	}
 
-	r, err := metrics.ConfigureRouter(c.FileStoragePath, c.StoreInterval, c.Restore)
+	r, err := metrics.ConfigureRouter(configs.NewStorage())
 	if err != nil {
 		return err
 	}
