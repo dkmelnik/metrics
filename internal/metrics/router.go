@@ -12,7 +12,7 @@ import (
 func ConfigureRouter(c configs.Storage) (*chi.Mux, error) {
 	r := chi.NewRouter()
 
-	r.Use(logger.Log.RequestLogger)
+	r.Use(logger.Log.RequestLog)
 
 	//infrastructure
 	store, err := storage.NewMemoryStorage(c.FileStoragePath, c.StoreInterval, c.Restore)

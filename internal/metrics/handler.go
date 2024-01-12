@@ -143,6 +143,7 @@ func (h *Handler) GetAllMetrics(rw http.ResponseWriter, r *http.Request) {
 	metrics := h.service.GetAllInHTML()
 	b := []byte(metrics)
 	rw.Header().Set("Content-Type", http.DetectContentType(b))
+	rw.WriteHeader(http.StatusOK)
 	if _, err := rw.Write(b); err != nil {
 		http.Error(rw, "Failed to write response", http.StatusInternalServerError)
 		return
