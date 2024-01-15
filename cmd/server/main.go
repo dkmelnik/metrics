@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/dkmelnik/metrics/configs"
+	"github.com/dkmelnik/metrics/internal/logger"
 	"github.com/dkmelnik/metrics/internal/metrics"
 	"github.com/dkmelnik/metrics/internal/server"
 )
@@ -18,13 +19,21 @@ func main() {
 }
 
 func run() error {
+
 	if err := configs.CheckUnknownFlags(); err != nil {
 		return err
 	}
 
-	c := configs.NewServer().Build()
+	c := configs.NewServer()
 
-	r := metrics.ConfigureRouter()
+	if err := logger.Initialize(c.LogLevel); err != nil {
+		return err
+	}
+
+	r, err := metrics.ConfigureRouter(configs.NewStorage())
+	if err != nil {
+		return err
+	}
 
 	s := server.NewServer(c.Addr, r)
 

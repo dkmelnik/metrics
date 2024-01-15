@@ -1,32 +1,31 @@
 package collect
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
+	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"reflect"
 	"time"
 
-	"github.com/dkmelnik/metrics/internal/models"
+	"github.com/go-resty/resty/v2"
 )
 
-func Send(ctx context.Context, t *time.Ticker, md *models.Metrics, serverURL string) {
+func Send(ctx context.Context, t *time.Ticker, ch <-chan *Metrics, serverURL string) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			if md == nil {
-				continue
-			}
-			loopMetricsAndSend(md, serverURL)
+			loopMetricsAndSend(<-ch, serverURL)
 		}
 	}
 }
 
-func loopMetricsAndSend(md *models.Metrics, serverURL string) {
+func loopMetricsAndSend(md *Metrics, serverURL string) {
 	metricType := reflect.TypeOf(*md)
 	metricValue := reflect.ValueOf(*md)
 
@@ -36,43 +35,68 @@ func loopMetricsAndSend(md *models.Metrics, serverURL string) {
 
 		tag := field.Tag.Get("metric")
 		if tag != "" {
-			reqURL := buildRequestURL(serverURL, tag, field.Name, convertToString(value))
-			_, err := makeRequest(reqURL)
+			body, err := buildCompressRequestBody(tag, field.Name, value.Interface())
 			if err != nil {
 				log.Println(err)
+				continue
 			}
+			sendMetricRequest(serverURL, body)
 		}
 	}
 }
 
-func makeRequest(url string) (string, error) {
-	client := http.Client{
-		Timeout: 40 * time.Second,
+func buildCompressRequestBody(mt string, mn string, vl interface{}) ([]byte, error) {
+	metric := make(map[string]interface{})
+
+	metric["id"] = mn
+	metric["type"] = mt
+
+	switch mt {
+	case "gauge":
+		if v, ok := vl.(float64); ok {
+			metric["value"] = v
+		}
+	case "counter":
+		if v, ok := vl.(int); ok {
+			metric["delta"] = v
+		}
+	}
+	var b bytes.Buffer
+	w := gzip.NewWriter(&b)
+
+	mtb, err := json.Marshal(metric)
+	if err != nil {
+		return nil, fmt.Errorf("failed marshal data to bytes: %v", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, url, nil)
+	_, err = w.Write(mtb)
 	if err != nil {
-		return "", err
+		return nil, fmt.Errorf("failed write data to compress temporary buffer: %v", err)
 	}
-	req.Header.Add("Content-Type", "text/plain")
-
-	res, err := client.Do(req)
+	err = w.Close()
 	if err != nil {
-		return "", err
+		return nil, fmt.Errorf("failed compress data: %v", err)
 	}
-	defer res.Body.Close()
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return "", err
-	}
-	return string(body), nil
+	return b.Bytes(), nil
 }
 
-func buildRequestURL(serverURL, tag, fieldName, value string) string {
-	return fmt.Sprintf("%s/update/%s/%s/%s", serverURL, tag, fieldName, value)
-}
+func sendMetricRequest(url string, body []byte) {
+	client := resty.New()
 
-func convertToString(value reflect.Value) string {
-	return fmt.Sprintf("%v", value.Interface())
+	resp, err := client.R().
+		SetHeaders(map[string]string{
+			"Content-Type":     "application/json",
+			"Content-Encoding": "gzip",
+		}).
+		SetBody(body).
+		Post(fmt.Sprintf("%s/update/", url))
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	if resp.StatusCode() != http.StatusOK {
+		log.Printf("Unexpected status code: %d", resp.StatusCode())
+	}
 }

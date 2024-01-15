@@ -8,19 +8,23 @@ import (
 )
 
 type Agent struct {
-	Addr                         string
+	Addr, LogLevel               string
 	ReportInterval, PollInterval int
 }
 
 func NewAgent() Agent {
-	return Agent{}
-}
+	cb := Agent{}
 
-func (cb Agent) Build() Agent {
-	flag.StringVar(&cb.Addr, "a", "http://localhost:8080", "server by collected metric address ")
-	flag.IntVar(&cb.ReportInterval, "r", 10, "frequency of sending collect to the server")
-	flag.IntVar(&cb.PollInterval, "p", 2, "frequency of sending collect to the server")
+	flag.StringVar(&cb.Addr, "a", "http://localhost:8080", "server by collected metric address")
+	flag.IntVar(&cb.ReportInterval, "r", 10, "period for sending metrics to the server")
+	flag.IntVar(&cb.PollInterval, "p", 2, "metrics collection period")
+	flag.StringVar(&cb.LogLevel, "l", "warn", "logging level. If empty, warn is used")
 	flag.Parse()
+
+	l, ok := os.LookupEnv("LOG_LEVEL")
+	if ok {
+		cb.LogLevel = l
+	}
 
 	s, ok := os.LookupEnv("ADDRESS")
 	if ok {

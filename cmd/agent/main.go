@@ -7,13 +7,11 @@ import (
 
 	"github.com/dkmelnik/metrics/configs"
 	"github.com/dkmelnik/metrics/internal/collect"
-	"github.com/dkmelnik/metrics/internal/models"
 )
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	log.Println("agent is running!")
-
 	if err := run(); err != nil {
 		log.Fatal(err)
 	}
@@ -24,20 +22,23 @@ func run() error {
 		return err
 	}
 
-	c := configs.NewAgent().Build()
+	c := configs.NewAgent()
 
-	md := &models.Metrics{}
+	metricsChan := make(chan *collect.Metrics)
 
+	// CTX for stopping sender and collector
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	// COLLECTOR
 	collectPeriod := time.NewTicker(time.Second * time.Duration(c.PollInterval))
 	defer collectPeriod.Stop()
-	go collect.Collect(ctx, collectPeriod, md)
+	go collect.Collect(ctx, collectPeriod, metricsChan)
 
+	// SENDER
 	sendPeriod := time.NewTicker(time.Second * time.Duration(c.ReportInterval))
 	defer sendPeriod.Stop()
-	go collect.Send(ctx, sendPeriod, md, c.Addr)
+	go collect.Send(ctx, sendPeriod, metricsChan, c.Addr)
 
 	done := make(chan struct{})
 	<-done
