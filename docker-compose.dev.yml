@@ -9,6 +9,7 @@ services:
       - "2345:2345"
     environment:
       - LOG_LEVEL=info
+      - APP_MODE=development
     volumes:
       - .:/app
 

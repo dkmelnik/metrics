@@ -1,9 +1,10 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
-	"log"
+	"github.com/dkmelnik/metrics/internal/logger"
 	"os"
 	"strings"
 	"sync"
@@ -100,12 +101,14 @@ func (ms *MemoryStorage) intervalUpdatingToFile(t *time.Ticker) {
 }
 
 func (ms *MemoryStorage) loadMetricsFromFile() {
+	ctx := context.Background()
+
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
 	file, err := os.OpenFile(ms.filePath, os.O_RDONLY, 0666)
 	if err != nil {
-		log.Println("Error open file:", err)
+		logger.Log.ErrorWithContext(ctx, err)
 		return
 	}
 	defer file.Close()
@@ -117,7 +120,7 @@ func (ms *MemoryStorage) loadMetricsFromFile() {
 
 	err = decoder.Decode(&m)
 	if err != nil {
-		log.Println("Error decode from file:", err)
+		logger.Log.ErrorWithContext(ctx, err)
 		return
 	}
 
@@ -125,18 +128,19 @@ func (ms *MemoryStorage) loadMetricsFromFile() {
 }
 
 func (ms *MemoryStorage) saveMetricsToFile() {
+	ctx := context.Background()
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 	if len(ms.metrics) > 0 {
 		file, err := os.OpenFile(ms.filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 		if err != nil {
-			log.Println("Error opening file:", err)
+			logger.Log.ErrorWithContext(ctx, err)
 			return
 		}
 		defer file.Close()
 		encoder := json.NewEncoder(file)
-		if err := encoder.Encode(ms.metrics); err != nil {
-			log.Println("Error encoding metric:", err)
+		if err = encoder.Encode(ms.metrics); err != nil {
+			logger.Log.ErrorWithContext(ctx, err)
 			return
 		}
 	}

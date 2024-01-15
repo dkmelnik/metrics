@@ -1,17 +1,17 @@
 package main
 
 import (
+	"os"
+
 	"github.com/dkmelnik/metrics/configs"
 	"github.com/dkmelnik/metrics/internal/logger"
 	"github.com/dkmelnik/metrics/internal/metrics"
 	"github.com/dkmelnik/metrics/internal/server"
-	"log"
-	"os"
 )
 
 func main() {
 	if err := run(); err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 }
 
@@ -33,7 +33,7 @@ func run() error {
 
 	s := server.NewServer(c.Addr, r)
 
-	logger.Log.Info("LISTEN AND SERVE", "addr", c.Addr)
+	logger.Log.Info("SERVER LISTEN AND SERVE", "addr", c.Addr)
 	if err = s.Run(); err != nil {
 		return err
 	}

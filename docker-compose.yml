@@ -9,6 +9,7 @@ services:
       target: production
     environment:
       - LOG_LEVEL=error
+      - APP_MODE=production
       - ADDRESS=http://localhost:8080
       - REPORT_INTERVAL=10
       - POLL_INTERVAL=2

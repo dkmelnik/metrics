@@ -61,8 +61,6 @@ func (l *logger) Error(msg string, args ...any) {
 }
 func (l *logger) RequestLog(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		l.slog.Info("incoming request: ", slog.String("method", r.Method), slog.String("uri", r.RequestURI))
-
 		responseData := &ResponseData{
 			status: 0,
 			size:   0,
@@ -88,11 +86,20 @@ func (l *logger) RequestLog(h http.Handler) http.Handler {
 		l.slog.Log(
 			r.Context(),
 			level,
-			"completed with: ",
-			slog.Int("code", lw.responseData.status),
-			slog.Int("size", lw.responseData.size),
-			slog.String("status", http.StatusText(lw.responseData.status)),
-			slog.Duration("time", time.Since(start)),
+			"[REQUEST]",
+			slog.Group(
+				"completed",
+				slog.Int("code", lw.responseData.status),
+				slog.Int("size", lw.responseData.size),
+				slog.String("status", http.StatusText(lw.responseData.status)),
+				slog.String("time", time.Since(start).String()),
+			),
+			slog.Group(
+				"incoming",
+				slog.String("method", r.Method),
+				slog.String("uri", r.RequestURI),
+				slog.String("addr", r.RemoteAddr),
+			),
 		)
 	})
 }
@@ -176,7 +183,9 @@ func (h *prettyHandler) Handle(ctx context.Context, r slog.Record) error {
 
 	fields := make(map[string]interface{}, r.NumAttrs())
 	r.Attrs(func(a slog.Attr) bool {
-		if a.Value.Kind() == slog.KindAny {
+
+		switch a.Value.Kind() {
+		case slog.KindAny:
 			switch v := a.Value.Any().(type) {
 			case error:
 				fields[a.Key] = map[string]interface{}{
@@ -186,7 +195,18 @@ func (h *prettyHandler) Handle(ctx context.Context, r slog.Record) error {
 			default:
 				fields[a.Key] = a.Value.Any()
 			}
-		} else {
+		case slog.KindGroup:
+			attrs := a.Value.Group()
+
+			var vl = make(map[string]interface{}, len(attrs))
+
+			for _, ga := range attrs {
+				vl[ga.Key] = ga.Value.Any()
+			}
+
+			fields[a.Key] = vl
+
+		default:
 			fields[a.Key] = a.Value.Any()
 		}
 

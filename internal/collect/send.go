@@ -6,7 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"github.com/dkmelnik/metrics/internal/logger"
 	"net/http"
 	"reflect"
 	"time"
@@ -37,7 +37,7 @@ func loopMetricsAndSend(md *Metrics, serverURL string) {
 		if tag != "" {
 			body, err := buildCompressRequestBody(tag, field.Name, value.Interface())
 			if err != nil {
-				log.Println(err)
+				logger.Log.ErrorWithContext(context.Background(), err)
 				continue
 			}
 			sendMetricRequest(serverURL, body)
@@ -92,11 +92,11 @@ func sendMetricRequest(url string, body []byte) {
 		Post(fmt.Sprintf("%s/update/", url))
 
 	if err != nil {
-		log.Println(err)
+		logger.Log.Error("sendMetricRequest", "err", err.Error(), "body", body)
 		return
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		log.Printf("Unexpected status code: %d", resp.StatusCode())
+		logger.Log.Error("sendMetricRequest", "err", err.Error(), "body", body, "resp", resp.Body())
 	}
 }
