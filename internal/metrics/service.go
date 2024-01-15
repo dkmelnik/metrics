@@ -88,14 +88,6 @@ func (s *Service) GetMetric(metricType string, metricID string) (models.Metric, 
 		return models.Metric{}, err
 	}
 
-	//if metric.MType == string(models.Gauge) {
-	//	round := math.Ceil(*metric.Value*1000) / 1000
-	//	metric.Value = &round
-	//}
-	//log.Printf("%v", metric)
-	//log.Println(metric.Value)
-	//log.Println(*metric.Value)
-
 	return metric, nil
 }
 
