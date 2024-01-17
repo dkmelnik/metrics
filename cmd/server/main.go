@@ -37,7 +37,7 @@ func run() error {
 
 	s := server.NewServer(c.Addr, r)
 
-	logger.Log.Info("SERVER LISTEN AND SERVE", "addr", c.Addr, "db", "connected")
+	logger.Log.Info("SERVER LISTEN AND SERVE", "addr", c.Addr, "DBConnected", conn != nil)
 	if err = s.Run(); err != nil {
 		return err
 	}

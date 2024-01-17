@@ -29,7 +29,6 @@ services:
       - RESTORE=true
       - STORE_INTERVAL=10
       - APP_MODE=production
-      - DATABASE_DSN=host=server_db port=5432 user=web dbname=local sslmode=disable password=web
     depends_on:
       - server_db
     ports:

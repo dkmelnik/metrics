@@ -115,8 +115,6 @@ func (ms *MemoryStorage) loadMetricsFromFile() {
 	}
 	defer file.Close()
 
-	ms.metrics = make([]models.Metric, 0)
-
 	var m []models.Metric
 	decoder := json.NewDecoder(file)
 
@@ -125,7 +123,7 @@ func (ms *MemoryStorage) loadMetricsFromFile() {
 		logger.Log.ErrorWithContext(ctx, err)
 		return
 	}
-
+	ms.metrics = make([]models.Metric, 0)
 	ms.metrics = m
 }
 

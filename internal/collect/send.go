@@ -97,6 +97,6 @@ func sendMetricRequest(url string, body []byte) {
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		logger.Log.Error("sendMetricRequest", "err", err.Error(), "body", body, "resp", resp.Body())
+		logger.Log.Error("sendMetricRequest", "err", "status not ok", "body", body, "resp", resp.Body())
 	}
 }
