@@ -89,7 +89,7 @@ func Test_CreateOrUpdateByParams(t *testing.T) {
 		},
 	}
 
-	r, err := ConfigureRouter(configs.Storage{FileStoragePath: "/tmp/metrics-db.json", StoreInterval: 10, Restore: false})
+	r, err := ConfigureRouter(nil, configs.Storage{FileStoragePath: "/tmp/metrics-db.json", StoreInterval: 10, Restore: false})
 	if err != nil {
 		t.Error(err)
 	}
@@ -254,7 +254,7 @@ func Test_CreateOrUpdateByJSON(t *testing.T) {
 			},
 		},
 	}
-	r, err := ConfigureRouter(configs.Storage{FileStoragePath: "/tmp/metrics-db.json", StoreInterval: 10, Restore: false})
+	r, err := ConfigureRouter(nil, configs.Storage{FileStoragePath: "/tmp/metrics-db.json", StoreInterval: 10, Restore: false})
 	if err != nil {
 		t.Error(err)
 	}
@@ -387,7 +387,7 @@ func Test_GetMetricValue(t *testing.T) {
 		t.Error(err)
 	}
 	sr := NewService(st)
-	h := NewHandler(sr)
+	h := NewHandler(nil, sr)
 
 	r.Get("/value/{type}/{name}", h.GetMetricValue)
 
@@ -499,7 +499,7 @@ func Test_GetMetric(t *testing.T) {
 		t.Error(err)
 	}
 	sr := NewService(st)
-	h := NewHandler(sr)
+	h := NewHandler(nil, sr)
 
 	r.Post("/value/", h.GetMetric)
 
@@ -530,7 +530,7 @@ func Test_GetAllMetrics(t *testing.T) {
 	}
 
 	sr := NewService(st)
-	h := NewHandler(sr)
+	h := NewHandler(nil, sr)
 
 	r.Get("/", h.GetAllMetrics)
 

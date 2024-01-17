@@ -16,7 +16,6 @@ services:
     ports:
       - "80:8080"
 
-
   server:
     container_name: server
     build:
@@ -30,8 +29,20 @@ services:
       - RESTORE=true
       - STORE_INTERVAL=10
       - APP_MODE=production
+      - DATABASE_DSN=host=server_db port=5432 user=web dbname=local sslmode=disable password=web
+    depends_on:
+      - server_db
     ports:
       - "81:8080"
 
+  server_db:
+    image: postgres:16.1-alpine3.19
+    container_name: server_db
+    environment:
+      POSTGRES_DB: "local"
+      POSTGRES_USER: "web"
+      POSTGRES_PASSWORD: "web"
+    ports:
+      - "5432:5432"
 
 

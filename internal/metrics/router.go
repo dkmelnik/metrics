@@ -3,25 +3,26 @@ package metrics
 import (
 	"github.com/dkmelnik/metrics/configs"
 	"github.com/go-chi/chi/v5"
+	"github.com/jmoiron/sqlx"
 
 	"github.com/dkmelnik/metrics/internal/logger"
 	"github.com/dkmelnik/metrics/internal/middlewares"
 	"github.com/dkmelnik/metrics/internal/storage"
 )
 
-func ConfigureRouter(c configs.Storage) (*chi.Mux, error) {
+func ConfigureRouter(pgDB *sqlx.DB, storageConfig configs.Storage) (*chi.Mux, error) {
 	r := chi.NewRouter()
 
 	r.Use(logger.Log.RequestLog)
 
 	//infrastructure
-	store, err := storage.NewMemoryStorage(c.FileStoragePath, c.StoreInterval, c.Restore)
+	store, err := storage.NewMemoryStorage(storageConfig.FileStoragePath, storageConfig.StoreInterval, storageConfig.Restore)
 	if err != nil {
 		return nil, err
 	}
 	//metrics
 	service := NewService(store)
-	metricsHandler := NewHandler(service)
+	metricsHandler := NewHandler(pgDB, service)
 
 	r.Post("/update/{type}/{name}/{value}", metricsHandler.CreateOrUpdateByParams)
 
@@ -41,6 +42,8 @@ func ConfigureRouter(c configs.Storage) (*chi.Mux, error) {
 		r.Use(middlewares.Compress)
 		r.Get("/", metricsHandler.GetAllMetrics)
 	})
+
+	r.Get("/ping", metricsHandler.CheckPostgresDBConnection)
 
 	return r, nil
 }

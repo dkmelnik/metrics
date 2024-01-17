@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/dkmelnik/metrics/configs"
+	"github.com/dkmelnik/metrics/internal/db"
 	"github.com/dkmelnik/metrics/internal/logger"
 	"github.com/dkmelnik/metrics/internal/metrics"
 	"github.com/dkmelnik/metrics/internal/server"
@@ -26,14 +27,19 @@ func run() error {
 
 	c := configs.NewServer()
 
-	r, err := metrics.ConfigureRouter(configs.NewStorage())
+	conn, err := db.NewPsqlConnection(c)
+	if err != nil {
+		return err
+	}
+
+	r, err := metrics.ConfigureRouter(conn, configs.NewStorage())
 	if err != nil {
 		return err
 	}
 
 	s := server.NewServer(c.Addr, r)
 
-	logger.Log.Info("SERVER LISTEN AND SERVE", "addr", c.Addr)
+	logger.Log.Info("SERVER LISTEN AND SERVE", "addr", c.Addr, "db", "connected")
 	if err = s.Run(); err != nil {
 		return err
 	}

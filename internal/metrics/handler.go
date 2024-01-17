@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/jmoiron/sqlx"
 	"net/http"
 	"strings"
 
@@ -14,11 +15,12 @@ import (
 )
 
 type Handler struct {
+	pgDB    *sqlx.DB
 	service *Service
 }
 
-func NewHandler(s *Service) *Handler {
-	return &Handler{s}
+func NewHandler(pgDB *sqlx.DB, s *Service) *Handler {
+	return &Handler{pgDB, s}
 }
 
 func (h *Handler) CreateOrUpdateByParams(rw http.ResponseWriter, r *http.Request) {
@@ -148,4 +150,14 @@ func (h *Handler) GetAllMetrics(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, "Failed to write response", http.StatusInternalServerError)
 		return
 	}
+}
+
+func (h *Handler) CheckPostgresDBConnection(rw http.ResponseWriter, r *http.Request) {
+	if err := h.pgDB.Ping(); err != nil {
+		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	rw.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	rw.WriteHeader(http.StatusOK)
 }

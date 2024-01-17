@@ -29,7 +29,6 @@ tests.remote:
 	docker build -t $(DOCKER_IMAGE_TEST_NAME) -f Docker/Dockerfile-tests --target=tests .
 	docker run --rm -it --name ${DOCKER_CONTAINER_NAME} $(DOCKER_IMAGE_TEST_NAME) bash
 
-
 run.server:
 	docker-compose run --rm --build server sh
 
@@ -38,6 +37,17 @@ run.agent:
 
 tests.local:
 	docker-compose -f docker-compose.yml -f docker-compose.dev.yml run --rm server go test ./...
+
+migrate.up:
+	docker-compose exec server migrate -database "postgres://web:web@server_db:5432/local?sslmode=disable" -path migrations up
+
+migrate.down:
+	docker-compose exec server migrate -database "postgres://web:web@server_db:5432/local?sslmode=disable" -path migrations down
+
+migrate.create:
+	docker-compose exec server migrate create -tz Europe/Moscow -ext sql -dir ./migrations ${name}
+
+
 
 
 
