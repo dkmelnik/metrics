@@ -153,6 +153,11 @@ func (h *Handler) GetAllMetrics(rw http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) CheckPostgresDBConnection(rw http.ResponseWriter, r *http.Request) {
+	if h.pgDB == nil {
+		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
 	if err := h.pgDB.Ping(); err != nil {
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
