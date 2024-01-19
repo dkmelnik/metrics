@@ -17,15 +17,15 @@ func main() {
 }
 
 func run() error {
-	if err := logger.Setup(configs.NewLogger(), os.Stdout); err != nil {
+	c := configs.NewAgent()
+
+	if err := logger.Setup(c, os.Stdout); err != nil {
 		return err
 	}
 
 	if err := configs.CheckUnknownFlags(); err != nil {
 		return err
 	}
-
-	c := configs.NewAgent()
 
 	metricsChan := make(chan *collect.Metrics)
 

@@ -17,7 +17,9 @@ func main() {
 }
 
 func run() error {
-	if err := logger.Setup(configs.NewLogger(), os.Stdout); err != nil {
+	c := configs.NewServer()
+
+	if err := logger.Setup(c, os.Stdout); err != nil {
 		return err
 	}
 
@@ -25,12 +27,10 @@ func run() error {
 		return err
 	}
 
-	c := configs.NewServer()
-
 	// TODO: если обработать тесты упадут
 	conn, _ := db.NewPsqlConnection(c)
 
-	r, err := metrics.ConfigureRouter(conn, configs.NewStorage())
+	r, err := metrics.ConfigureRouter(conn, c)
 	if err != nil {
 		return err
 	}

@@ -3,7 +3,6 @@ package logger
 import (
 	"context"
 	"encoding/json"
-	"github.com/dkmelnik/metrics/configs"
 	"github.com/fatih/color"
 	"github.com/mdobak/go-xerrors"
 	"io"
@@ -112,7 +111,7 @@ func (l *logger) ErrorWithContext(ctx context.Context, err error) {
 	l.slog.ErrorContext(ctx, err.Error(), sl)
 }
 
-func Setup(c configs.Logger, w io.Writer) error {
+func Setup(c IConfig, w io.Writer) error {
 	handler := setupHandler(c, w)
 
 	Log = logger{slog.New(handler)}
@@ -127,8 +126,8 @@ var loggerLevelMap = map[string]slog.Level{
 	"error": slog.LevelError,
 }
 
-func getLoggerLevel(c configs.Logger) slog.Level {
-	level, exist := loggerLevelMap[c.Level]
+func getLoggerLevel(c IConfig) slog.Level {
+	level, exist := loggerLevelMap[c.GetLevel()]
 	if !exist {
 		return slog.LevelError
 	}
@@ -137,11 +136,11 @@ func getLoggerLevel(c configs.Logger) slog.Level {
 }
 
 // Depending on the operating mode of the application, select the logger operating mode
-func setupHandler(c configs.Logger, w io.Writer) slog.Handler {
+func setupHandler(c IConfig, w io.Writer) slog.Handler {
 	opts := &slog.HandlerOptions{
 		Level: getLoggerLevel(c),
 	}
-	if c.Mode == "production" {
+	if c.GetMode() == "production" {
 		opts.ReplaceAttr = replaceAttr
 		return slog.NewJSONHandler(w, opts)
 	}

@@ -13,3 +13,8 @@ type ILogger interface {
 	Error(msg string, args ...any)
 	ErrorWithContext(ctx context.Context, err error)
 }
+
+type IConfig interface {
+	GetLevel() string
+	GetMode() string
+}

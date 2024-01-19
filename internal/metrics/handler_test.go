@@ -89,7 +89,7 @@ func Test_CreateOrUpdateByParams(t *testing.T) {
 		},
 	}
 
-	r, err := ConfigureRouter(nil, configs.Storage{FileStoragePath: "/tmp/metrics-db.json", StoreInterval: 10, Restore: false})
+	r, err := ConfigureRouter(nil, configs.Server{FileStoragePath: "/tmp/metrics-db.json", StoreInterval: 10, Restore: false})
 	if err != nil {
 		t.Error(err)
 	}
@@ -254,7 +254,7 @@ func Test_CreateOrUpdateByJSON(t *testing.T) {
 			},
 		},
 	}
-	r, err := ConfigureRouter(nil, configs.Storage{FileStoragePath: "/tmp/metrics-db.json", StoreInterval: 10, Restore: false})
+	r, err := ConfigureRouter(nil, configs.Server{FileStoragePath: "/tmp/metrics-db.json", StoreInterval: 10, Restore: false})
 	if err != nil {
 		t.Error(err)
 	}

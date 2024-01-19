@@ -10,7 +10,7 @@ import (
 	"github.com/dkmelnik/metrics/internal/storage"
 )
 
-func ConfigureRouter(pgDB *sqlx.DB, storageConfig configs.Storage) (*chi.Mux, error) {
+func ConfigureRouter(pgDB *sqlx.DB, storageConfig configs.Server) (*chi.Mux, error) {
 	r := chi.NewRouter()
 
 	r.Use(logger.Log.RequestLog)
