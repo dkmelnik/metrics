@@ -8,9 +8,9 @@ services:
       dockerfile: docker/Dockerfile-agent
       target: production
     environment:
-      - LOG_LEVEL=error
+      - LOG_LEVEL=info
       - APP_MODE=production
-      - ADDRESS=http://localhost:8080
+      - ADDRESS=http://server:8080
       - REPORT_INTERVAL=10
       - POLL_INTERVAL=2
     ports:
@@ -23,12 +23,13 @@ services:
       dockerfile: docker/Dockerfile-server
       target: production
     environment:
-      - LOG_LEVEL=error
+      - LOG_LEVEL=info
       - ADDRESS=0.0.0.0:8080
       - FILE_STORAGE_PATH=/app/tmp/metrics-db.json
       - RESTORE=true
       - STORE_INTERVAL=10
       - APP_MODE=production
+      - DATABASE_DSN=host=server_db port=5432 user=web dbname=local sslmode=disable password=web
     depends_on:
       - server_db
     ports:

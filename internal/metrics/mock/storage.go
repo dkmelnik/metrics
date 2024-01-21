@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"database/sql"
 	"github.com/dkmelnik/metrics/internal/models"
 	"github.com/dkmelnik/metrics/internal/storage"
 )
@@ -44,11 +45,17 @@ func (s *StorageMock) fillStorage() {
 			}
 			if metricType == string(models.Gauge) {
 				fl, _ := value.(float64)
-				m.Value = &fl
+				m.Value = sql.NullFloat64{
+					Float64: fl,
+					Valid:   true,
+				}
 			} else {
 				it, _ := value.(int)
 				it2 := int64(it)
-				m.Delta = &it2
+				m.Delta = sql.NullInt64{
+					Int64: it2,
+					Valid: true,
+				}
 			}
 			s.SaveOrUpdate(m)
 		}
