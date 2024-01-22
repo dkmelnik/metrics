@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dkmelnik/metrics/internal/apperrors"
-	"github.com/go-chi/chi/v5"
-	"github.com/jmoiron/sqlx"
 	"net/http"
 
-	"github.com/dkmelnik/metrics/internal/metrics/dto/metric"
+	"github.com/go-chi/chi/v5"
+	"github.com/jmoiron/sqlx"
+
+	"github.com/dkmelnik/metrics/internal/apperrors"
+	"github.com/dkmelnik/metrics/internal/metrics/dto"
 	"github.com/dkmelnik/metrics/internal/models"
 )
 
@@ -51,17 +52,30 @@ func (h *Handler) CreateOrUpdateByParams(rw http.ResponseWriter, r *http.Request
 }
 
 func (h *Handler) CreateOrUpdateByJSON(rw http.ResponseWriter, r *http.Request) {
-	var body models.Metric
+	var body dto.CreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	if !body.Delta.Valid && !body.Value.Valid {
+	if body.Delta == nil && body.Value == nil {
 		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
-	if err := h.service.CreateOrUpdate(body); err != nil {
+
+	model := models.Metric{
+		Name:  body.ID,
+		MType: body.MType,
+	}
+
+	if body.Delta != nil {
+		model.SetDelta(*body.Delta)
+	}
+	if body.Value != nil {
+		model.SetValue(*body.Value)
+	}
+
+	if err := h.service.CreateOrUpdate(model); err != nil {
 		switch {
 		case errors.Is(err, apperrors.ErrTypeNotCorrect):
 			http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -73,7 +87,10 @@ func (h *Handler) CreateOrUpdateByJSON(rw http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	marshal, err := json.Marshal(body)
+	var out dto.Response
+	out.AdaptModel(model)
+
+	marshal, err := json.Marshal(out)
 	if err != nil {
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -88,7 +105,7 @@ func (h *Handler) CreateOrUpdateByJSON(rw http.ResponseWriter, r *http.Request) 
 }
 
 func (h *Handler) GetMetric(rw http.ResponseWriter, r *http.Request) {
-	var body metric.GetRequest
+	var body dto.GetRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return

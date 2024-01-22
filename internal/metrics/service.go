@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dkmelnik/metrics/internal/logger"
+	"github.com/dkmelnik/metrics/internal/metrics/dto"
 	"strconv"
 
 	"github.com/dkmelnik/metrics/internal/apperrors"
@@ -56,16 +57,26 @@ func (s *Service) CreateOrUpdate(dto models.Metric) error {
 	return s.metricsRepo.SaveOrUpdate(dto)
 }
 
-func (s *Service) GetMetric(tp, nm string) (models.Metric, error) {
-	return s.metricsRepo.FindOneByTypeAndName(tp, nm)
+func (s *Service) GetMetric(tp, nm string) (dto.Response, error) {
+	m, err := s.metricsRepo.FindOneByTypeAndName(tp, nm)
+	if err != nil {
+		return dto.Response{}, err
+	}
+	var out dto.Response
+	out.AdaptModel(m)
+
+	return out, nil
 }
 
 func (s *Service) GetMetricValue(tp, nm string) (interface{}, error) {
-	m, err := s.GetMetric(tp, nm)
+	m, err := s.metricsRepo.FindOneByTypeAndName(tp, nm)
+	if err != nil {
+		return dto.Response{}, err
+	}
 	if err != nil {
 		return nil, err
 	}
-	return m.GetValue(), nil
+	return m.GetAdaptedByTypeValue(), nil
 }
 
 func (s *Service) GetAllInHTML() (string, error) {
@@ -79,7 +90,7 @@ func (s *Service) GetAllInHTML() (string, error) {
 		html += "<li>"
 		html += "<strong>" + metric.Name + ": </strong>"
 		html += fmt.Sprintf("Guid: %v\t", metric.ID)
-		html += fmt.Sprintf("Value: %v", metric.GetValue())
+		html += fmt.Sprintf("Value: %v", metric.GetAdaptedByTypeValue())
 		html += "</li>"
 	}
 

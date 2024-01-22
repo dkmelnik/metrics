@@ -5,7 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
-	"github.com/dkmelnik/metrics/internal/models"
+	"github.com/dkmelnik/metrics/internal/metrics/dto"
 	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"net/http"
@@ -19,7 +19,7 @@ func Test_Send(t *testing.T) {
 	metricsNames := make([]string, 0)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var data models.Metric
+		var data dto.Response
 
 		if r.Header.Get(`Content-Encoding`) == `gzip` {
 			gz, err := gzip.NewReader(r.Body)
