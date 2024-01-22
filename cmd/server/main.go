@@ -29,7 +29,7 @@ func run() error {
 
 	// TODO: если обработать тесты упадут
 	conn, _ := db.NewPsqlConnection(c)
-
+	//conn = nil
 	r, err := metrics.ConfigureRouter(conn, c)
 	if err != nil {
 		return err

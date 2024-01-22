@@ -7,6 +7,7 @@ import (
 	"github.com/dkmelnik/metrics/internal/apperrors"
 	"github.com/dkmelnik/metrics/internal/models"
 	"github.com/jmoiron/sqlx"
+	"time"
 )
 
 type RepositoryStorage struct {
@@ -36,7 +37,8 @@ func (r *RepositoryStorage) SaveOrUpdate(metric models.Metric) error {
 		return err
 	}
 
-	uq := `UPDATE metrics SET delta = :delta, value = :value WHERE type = :type AND name = :name`
+	uq := `UPDATE metrics SET delta = :delta, value = :value, updated_at = :updated_at WHERE type = :type AND name = :name`
+	metric.UpdatedAT = time.Now()
 	_, err = r.db.NamedExecContext(ctx, uq, metric)
 
 	return err

@@ -4,7 +4,7 @@ DOCKER_CONTAINER_NAME := metrics-agent-tests-container
 
 
 up.debug:
-	docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
+	docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
 stop:
 	docker-compose stop

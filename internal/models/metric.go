@@ -30,6 +30,10 @@ func (m *Metric) SetDelta(delta int64) {
 	m.Delta.Valid = true
 }
 
+func (m *Metric) UpdateDelta(delta int64) {
+	m.Delta.Int64 += delta
+}
+
 func (m *Metric) SetValue(value float64) {
 	m.Value.Float64 = m.toFixed(value, 3)
 	m.Value.Valid = true

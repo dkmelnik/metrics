@@ -1,7 +1,9 @@
 package metrics
 
 import (
+	"errors"
 	"fmt"
+	"github.com/dkmelnik/metrics/internal/logger"
 	"strconv"
 
 	"github.com/dkmelnik/metrics/internal/apperrors"
@@ -43,6 +45,15 @@ func (s *Service) CreateOrUpdateByParams(tp, nm, vl string) error {
 }
 
 func (s *Service) CreateOrUpdate(dto models.Metric) error {
+	if string(models.Counter) == dto.MType {
+		logger.Log.Info("Counter metric", "name", dto.Name, "delta", dto.Delta)
+		prev, err := s.metricsRepo.FindOneByTypeAndName(dto.MType, dto.Name)
+		if nil != err && !errors.Is(err, apperrors.ErrNotFound) {
+			logger.Log.Error("Error while getting metric", "error", err)
+			return err
+		}
+		dto.UpdateDelta(prev.Delta.Int64)
+	}
 	return s.metricsRepo.SaveOrUpdate(dto)
 }
 
