@@ -71,9 +71,6 @@ func (s *Service) GetMetric(tp, nm string) (dto.Response, error) {
 func (s *Service) GetMetricValue(tp, nm string) (interface{}, error) {
 	m, err := s.metricsRepo.FindOneByTypeAndName(tp, nm)
 	if err != nil {
-		return dto.Response{}, err
-	}
-	if err != nil {
 		return nil, err
 	}
 	return m.GetAdaptedByTypeValue(), nil

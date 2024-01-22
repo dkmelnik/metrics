@@ -63,11 +63,11 @@ func run() error {
 func migrateDB(connStr string) error {
 
 	dbinst, err := sql.Open("postgres", connStr)
-	defer dbinst.Close()
-
 	if err != nil {
 		return err
 	}
+	defer dbinst.Close()
+
 	driver, err := postgres.WithInstance(dbinst, &postgres.Config{})
 	if err != nil {
 		return err
