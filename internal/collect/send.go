@@ -6,12 +6,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/dkmelnik/metrics/internal/logger"
 	"net/http"
 	"reflect"
 	"time"
 
 	"github.com/go-resty/resty/v2"
+
+	"github.com/dkmelnik/metrics/internal/logger"
 )
 
 func Send(ctx context.Context, t *time.Ticker, ch <-chan *Metrics, serverURL string) {

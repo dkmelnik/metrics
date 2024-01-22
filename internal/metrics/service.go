@@ -46,7 +46,6 @@ func (s *Service) CreateOrUpdateByParams(tp, nm, vl string) error {
 
 func (s *Service) CreateOrUpdate(dto models.Metric) error {
 	if string(models.Counter) == dto.MType {
-		logger.Log.Info("Counter metric", "name", dto.Name, "delta", dto.Delta)
 		prev, err := s.metricsRepo.FindOneByTypeAndName(dto.MType, dto.Name)
 		if nil != err && !errors.Is(err, apperrors.ErrNotFound) {
 			logger.Log.Error("Error while getting metric", "error", err)
@@ -79,6 +78,7 @@ func (s *Service) GetAllInHTML() (string, error) {
 	for _, metric := range metrics {
 		html += "<li>"
 		html += "<strong>" + metric.Name + ": </strong>"
+		html += fmt.Sprintf("Guid: %v\t", metric.ID)
 		html += fmt.Sprintf("Value: %v", metric.GetValue())
 		html += "</li>"
 	}

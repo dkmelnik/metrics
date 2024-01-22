@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/dkmelnik/metrics/internal/apperrors"
 	"github.com/dkmelnik/metrics/internal/logger"
 	"github.com/dkmelnik/metrics/internal/models"
@@ -39,24 +40,22 @@ func NewMemoryStorage(storagePath string, storeInterval int, restore bool) (*Mem
 }
 
 func (m *MemoryStorage) SaveOrUpdate(metric models.Metric) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	existingMetric, err := m.FindOneByTypeAndName(metric.MType, metric.Name)
 
-	metric.ID = utils.GenerateGUID()
-	metric.CreatedAT = time.Now()
-	metric.UpdatedAT = time.Now()
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 
-	key := metric.ID
-
-	if existingMetric, ok := m.metrics[key]; ok {
-		existingMetric.Delta = metric.Delta
-		existingMetric.Value = metric.Value
-		existingMetric.UpdatedAT = time.Now()
-		m.metrics[key] = existingMetric
-	} else {
-
-		m.metrics[key] = metric
+	if nil != err {
+		if errors.Is(err, apperrors.ErrNotFound) {
+			metric.ID = utils.GenerateGUID()
+			m.metrics[metric.ID] = metric
+			return nil
+		}
+		return err
 	}
+
+	metric.ID = existingMetric.ID
+	m.metrics[existingMetric.ID] = metric
 
 	return nil
 }
@@ -65,10 +64,10 @@ func (m *MemoryStorage) FindOneByTypeAndName(mType, mName string) (models.Metric
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	key := mType + "_" + mName
-
-	if metric, ok := m.metrics[key]; ok {
-		return metric, nil
+	for _, metric := range m.metrics {
+		if metric.MType == mType && metric.Name == mName {
+			return metric, nil
+		}
 	}
 
 	return models.Metric{}, apperrors.ErrNotFound
@@ -78,12 +77,12 @@ func (m *MemoryStorage) Find() ([]models.Metric, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	var metrics []models.Metric
+	var existingData []models.Metric
 	for _, metric := range m.metrics {
-		metrics = append(metrics, metric)
+		existingData = append(existingData, metric)
 	}
 
-	return metrics, nil
+	return existingData, nil
 }
 
 func (m *MemoryStorage) intervalUpdatingToFile(t *time.Ticker) {
@@ -105,16 +104,16 @@ func (m *MemoryStorage) loadMetricsFromFile() {
 	}
 	defer file.Close()
 
-	var ms []models.Metric
+	var ms = make(map[string]models.Metric)
 
 	err = json.NewDecoder(file).Decode(&ms)
 	if err != nil {
 		logger.Log.ErrorWithContext(ctx, err)
 		return
 	}
-	m.metrics = make(map[string]models.Metric)
-	for _, metric := range ms {
-		key := metric.MType + "_" + metric.Name
+	for id, metric := range ms {
+		key := id
+		metric.ID = key
 		m.metrics[key] = metric
 	}
 }
