@@ -230,7 +230,7 @@ func Test_CreateOrUpdateByJSON(t *testing.T) {
 				response: `{
 					"id": "LastGC",
 					"type": "gauge",
-					"value": 10.123
+					"value": 10.123123
 				}`,
 				contentType: "application/json",
 			},
@@ -325,7 +325,7 @@ func Test_GetMetricValue(t *testing.T) {
 			metricsName: "TotalAlloc",
 			want: want{
 				code:        http.StatusOK,
-				response:    "7.708",
+				response:    "7.70766",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},

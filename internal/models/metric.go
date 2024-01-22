@@ -34,7 +34,7 @@ func (m *Metric) UpdateDelta(delta int64) {
 }
 
 func (m *Metric) SetValue(value float64) {
-	m.Value.Float64 = m.toFixed(value, 3)
+	m.Value.Float64 = value
 	m.Value.Valid = true
 }
 
