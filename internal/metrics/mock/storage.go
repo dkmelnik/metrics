@@ -1,7 +1,6 @@
 package mock
 
 import (
-	"database/sql"
 	"github.com/dkmelnik/metrics/internal/models"
 	"github.com/dkmelnik/metrics/internal/storage"
 )
@@ -32,32 +31,33 @@ func NewStorageMock() (*StorageMock, error) {
 		return nil, err
 	}
 	s := &StorageMock{r}
-	s.fillStorage()
+	err = s.fillStorage()
+	if err != nil {
+		return nil, err
+	}
 	return s, nil
 }
 
-func (s *StorageMock) fillStorage() {
+func (s *StorageMock) fillStorage() error {
 	for metricType, metrics := range metricValues {
 		for metricName, value := range metrics {
 			var m = models.Metric{
-				ID:    metricName,
+				Name:  metricName,
 				MType: metricType,
 			}
 			if metricType == string(models.Gauge) {
 				fl, _ := value.(float64)
-				m.Value = sql.NullFloat64{
-					Float64: fl,
-					Valid:   true,
-				}
+				m.SetValue(fl)
 			} else {
 				it, _ := value.(int)
 				it2 := int64(it)
-				m.Delta = sql.NullInt64{
-					Int64: it2,
-					Valid: true,
-				}
+				m.SetDelta(it2)
 			}
-			s.SaveOrUpdate(m)
+			err := s.SaveOrUpdate(m)
+			if err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }

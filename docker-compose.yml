@@ -8,6 +8,7 @@ services:
       dockerfile: docker/Dockerfile-agent
       target: production
     environment:
+      - TZ=Europe/Moscow
       - LOG_LEVEL=info
       - APP_MODE=production
       - ADDRESS=http://server:8080
@@ -23,6 +24,7 @@ services:
       dockerfile: docker/Dockerfile-server
       target: production
     environment:
+      - TZ=Europe/Moscow
       - LOG_LEVEL=info
       - ADDRESS=0.0.0.0:8080
       - FILE_STORAGE_PATH=/app/tmp/metrics-db.json
@@ -39,6 +41,7 @@ services:
     image: postgres:16.1-alpine3.19
     container_name: server_db
     environment:
+      TZ: "Europe/Moscow"
       POSTGRES_DB: "local"
       POSTGRES_USER: "web"
       POSTGRES_PASSWORD: "web"

@@ -68,6 +68,11 @@ func (h *Handler) CreateOrUpdateByJSON(rw http.ResponseWriter, r *http.Request) 
 		MType: body.MType,
 	}
 
+	if err := model.CheckType(); err != nil {
+		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
 	if body.Delta != nil {
 		model.SetDelta(*body.Delta)
 	}

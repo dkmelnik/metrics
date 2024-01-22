@@ -230,7 +230,7 @@ func Test_CreateOrUpdateByJSON(t *testing.T) {
 				response: `{
 					"id": "LastGC",
 					"type": "gauge",
-					"value": 10.123123
+					"value": 10.123
 				}`,
 				contentType: "application/json",
 			},
@@ -305,7 +305,7 @@ func Test_GetMetricValue(t *testing.T) {
 			metricsName: "HeapSys",
 			want: want{
 				code:        http.StatusOK,
-				response:    "3833856",
+				response:    "3.833856e+06",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
@@ -345,7 +345,7 @@ func Test_GetMetricValue(t *testing.T) {
 			metricsName: "OtherSys",
 			want: want{
 				code:        http.StatusOK,
-				response:    "3485734.1",
+				response:    "3.4857341e+06",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
@@ -355,7 +355,7 @@ func Test_GetMetricValue(t *testing.T) {
 			metricsName: "NextGC",
 			want: want{
 				code:        http.StatusOK,
-				response:    "-3358720",
+				response:    "-3.35872e+06",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},

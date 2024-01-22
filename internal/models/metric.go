@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"github.com/dkmelnik/metrics/internal/apperrors"
 	"math"
 	"time"
 )
@@ -53,4 +54,11 @@ func (m *Metric) round(num float64) int {
 func (m *Metric) toFixed(num float64, precision int) float64 {
 	output := math.Pow(10, float64(precision))
 	return float64(m.round(num*output)) / output
+}
+
+func (m *Metric) CheckType() error {
+	if !(m.MType == string(Gauge) || m.MType == string(Counter)) {
+		return apperrors.ErrTypeNotCorrect
+	}
+	return nil
 }
