@@ -6,10 +6,11 @@ import (
 	"os"
 
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/database/sqlite3"
 
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	_ "github.com/lib/pq"
 
 	"github.com/dkmelnik/metrics/configs"
 	"github.com/dkmelnik/metrics/internal/db"
@@ -37,22 +38,40 @@ func run() error {
 	}
 
 	// TODO: если обработать тесты упадут
-	conn, _ := db.NewPsqlConnection(c)
+	connPG, _ := db.NewPsqlConnection(c)
 
-	if conn != nil {
-		if err := migrateDB(c.DBConnectStr); err != nil {
+	if connPG != nil {
+		defer connPG.Close()
+		if err := migrateDatabase(
+			"postgres",
+			c.DBConnectStr,
+			"file://migrations/pg",
+		); err != nil {
 			return err
 		}
 	}
 
-	r, err := metrics.ConfigureRouter(conn, c)
+	dbName := "file:db.sqlite3?cache=shared"
+	connSQLITE, _ := db.NewSQLITEConnection(dbName)
+	if connSQLITE != nil {
+		defer connSQLITE.Close()
+		if err := migrateDatabase(
+			"sqlite3",
+			dbName,
+			"file://migrations/sqlite",
+		); err != nil {
+			return err
+		}
+	}
+
+	r, err := metrics.ConfigureRouter(connPG, c)
 	if err != nil {
 		return err
 	}
 
 	s := server.NewServer(c.Addr, r)
 
-	logger.Log.Info("SERVER LISTEN AND SERVE", "addr", c.Addr, "DBConnected", conn != nil)
+	logger.Log.Info("SERVER LISTEN AND SERVE", "addr", c.Addr, "DBConnected", connPG != nil)
 	if err = s.Run(); err != nil {
 		return err
 	}
@@ -60,24 +79,33 @@ func run() error {
 	return nil
 }
 
-func migrateDB(connStr string) error {
-
-	dbinst, err := sql.Open("postgres", connStr)
+func migrateDatabase(driverName, connStr, migrationPath string) error {
+	dbinst, err := sql.Open(driverName, connStr)
 	if err != nil {
 		return err
 	}
 	defer dbinst.Close()
 
-	driver, err := postgres.WithInstance(dbinst, &postgres.Config{})
+	var driver database.Driver
+	switch driverName {
+	case "postgres":
+		driver, err = postgres.WithInstance(dbinst, &postgres.Config{})
+	case "sqlite3":
+		driver, err = sqlite3.WithInstance(dbinst, &sqlite3.Config{})
+	default:
+		return errors.New("unsupported database driver")
+	}
+
 	if err != nil {
 		return err
 	}
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://migrations",
-		"postgres", driver)
+		migrationPath,
+		"db", driver)
 	if err != nil {
 		return err
 	}
+
 	err = m.Up()
 	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err
