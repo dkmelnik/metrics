@@ -57,6 +57,23 @@ func (s *Service) CreateOrUpdate(dto models.Metric) error {
 	return s.metricsRepo.SaveOrUpdate(dto)
 }
 
+func (s *Service) CreateOrUpdateMany(dtos []models.Metric) error {
+	var mds []models.Metric
+	for _, dto := range dtos {
+		if string(models.Counter) == dto.MType {
+			prev, err := s.metricsRepo.FindOneByTypeAndName(dto.MType, dto.Name)
+			if nil != err && !errors.Is(err, apperrors.ErrNotFound) {
+				logger.Log.Error("Error while getting metric", "error", err)
+				return err
+			}
+			dto.UpdateDelta(prev.Delta.Int64)
+		}
+		mds = append(mds, dto)
+	}
+
+	return s.metricsRepo.SaveOrUpdateMany(mds)
+}
+
 func (s *Service) GetMetric(tp, nm string) (dto.Response, error) {
 	m, err := s.metricsRepo.FindOneByTypeAndName(tp, nm)
 	if err != nil {

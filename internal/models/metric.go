@@ -24,6 +24,17 @@ type Metric struct {
 	UpdatedAT time.Time       `json:"updatedAt" db:"updated_at"`
 }
 
+func NewMetric(name string, mType string) (Metric, error) {
+	if !(mType == string(Gauge) || mType == string(Counter)) {
+		return Metric{}, apperrors.ErrTypeNotCorrect
+	}
+
+	return Metric{
+		Name:  name,
+		MType: mType,
+	}, nil
+}
+
 func (m *Metric) SetDelta(delta int64) {
 	m.Delta.Int64 = delta
 	m.Delta.Valid = true

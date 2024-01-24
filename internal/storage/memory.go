@@ -60,6 +60,16 @@ func (m *MemoryStorage) SaveOrUpdate(metric models.Metric) error {
 	return nil
 }
 
+func (m *MemoryStorage) SaveOrUpdateMany(metrics []models.Metric) error {
+	for _, metric := range metrics {
+		err := m.SaveOrUpdate(metric)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (m *MemoryStorage) FindOneByTypeAndName(mType, mName string) (models.Metric, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()

@@ -63,12 +63,9 @@ func (h *Handler) CreateOrUpdateByJSON(rw http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	model := models.Metric{
-		Name:  body.ID,
-		MType: body.MType,
-	}
+	model, err := models.NewMetric(body.ID, body.MType)
 
-	if err := model.CheckType(); err != nil {
+	if err != nil {
 		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
@@ -94,6 +91,70 @@ func (h *Handler) CreateOrUpdateByJSON(rw http.ResponseWriter, r *http.Request) 
 
 	var out dto.Response
 	out.AdaptModel(model)
+
+	marshal, err := json.Marshal(out)
+	if err != nil {
+		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	rw.Header().Set("Content-Type", "application/json")
+	rw.WriteHeader(http.StatusOK)
+	if _, err = rw.Write(marshal); err != nil {
+		http.Error(rw, "Failed to write response", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *Handler) CreateOrUpdateMany(rw http.ResponseWriter, r *http.Request) {
+	var body []dto.CreateRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	if len(body) == 0 {
+		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	var mds = make([]models.Metric, 0, len(body))
+	for _, v := range body {
+		if v.Delta == nil && v.Value == nil {
+			http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		model, err := models.NewMetric(v.ID, v.MType)
+		if err != nil {
+			http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		if v.Delta != nil {
+			model.SetDelta(*v.Delta)
+		}
+		if v.Value != nil {
+			model.SetValue(*v.Value)
+		}
+
+		mds = append(mds, model)
+	}
+
+	if err := h.service.CreateOrUpdateMany(mds); err != nil {
+		switch {
+		case errors.Is(err, apperrors.ErrTypeNotCorrect):
+			http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		case errors.Is(err, apperrors.ErrParse):
+			http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		default:
+			http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	var out = make([]dto.Response, len(mds))
+	for idx, v := range mds {
+		out[idx].AdaptModel(v)
+	}
 
 	marshal, err := json.Marshal(out)
 	if err != nil {

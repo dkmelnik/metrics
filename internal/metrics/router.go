@@ -39,6 +39,11 @@ func ConfigureRouter(pgDB *sqlx.DB, storageConfig configs.Server) (*chi.Mux, err
 		r.Post("/", metricsHandler.CreateOrUpdateByJSON)
 	})
 
+	r.Route("/updates/", func(r chi.Router) {
+		r.Use(middlewares.Compress)
+		r.Post("/", metricsHandler.CreateOrUpdateMany)
+	})
+
 	r.Get("/value/{type}/{name}", metricsHandler.GetMetricValue)
 
 	r.Route("/value/", func(r chi.Router) {

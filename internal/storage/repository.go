@@ -44,6 +44,51 @@ func (r *RepositoryStorage) SaveOrUpdate(metric models.Metric) error {
 	return err
 }
 
+func (r *RepositoryStorage) SaveOrUpdateMany(metrics []models.Metric) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	ctx := context.Background()
+
+	for _, m := range metrics {
+		var existingData models.Metric
+
+		sq := `SELECT * FROM metrics WHERE type = $1 AND name = $2 LIMIT 1`
+		err := r.db.GetContext(ctx, &existingData, sq, m.MType, m.Name)
+
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+
+		if errors.Is(err, sql.ErrNoRows) {
+			iq := `INSERT INTO metrics (name, type, delta, value) VALUES ($1, $2, $3, $4)`
+			_, err := tx.ExecContext(ctx, iq, m.Name, m.MType, m.Delta, m.Value)
+
+			if err != nil {
+				return err
+			}
+		} else {
+			uq := `UPDATE metrics SET delta = $1, value = $2, updated_at = $3 WHERE type = $4 AND name = $5`
+			m.UpdatedAT = time.Now()
+			_, err := tx.ExecContext(ctx, uq, m.Delta, m.Value, m.UpdatedAT, m.MType, m.Name)
+
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return tx.Commit()
+}
+
 func (r *RepositoryStorage) FindOneByTypeAndName(mType, mName string) (models.Metric, error) {
 	var existingData models.Metric
 	ctx := context.Background()

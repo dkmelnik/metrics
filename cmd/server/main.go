@@ -51,6 +51,8 @@ func run() error {
 		}
 	}
 
+	connPG = nil
+
 	dbName := "file:db.sqlite3?cache=shared"
 	connSQLITE, _ := db.NewSQLITEConnection(dbName)
 	if connSQLITE != nil {

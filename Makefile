@@ -17,6 +17,11 @@ logs.server:
 tests.local:
 	docker-compose -f docker-compose.yml -f docker-compose.dev.yml run --rm server go test ./...
 
+migrate.create:
+	docker-compose exec server migrate create -tz Europe/Moscow -ext sql -dir ./migrations/pg ${name}
+
+migrate.lite.create:
+	docker-compose exec server migrate create -tz Europe/Moscow -ext sql -dir ./migrations/sqlite ${name}
 
 
 
