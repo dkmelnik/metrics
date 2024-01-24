@@ -45,6 +45,17 @@ func (r *RepositoryStorage) SaveOrUpdate(metric models.Metric) error {
 }
 
 func (r *RepositoryStorage) SaveOrUpdateMany(metrics []models.Metric) error {
+	for _, m := range metrics {
+		err := r.SaveOrUpdate(m)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (r *RepositoryStorage) TXSaveOrUpdateMany(metrics []models.Metric) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
