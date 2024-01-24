@@ -58,7 +58,8 @@ func (s *Service) CreateOrUpdate(dto models.Metric) error {
 }
 
 func (s *Service) CreateOrUpdateMany(dtos []models.Metric) error {
-	var mds []models.Metric
+	logger.Log.Info("CreateOrUpdateMany", "payload", dtos)
+
 	for _, dto := range dtos {
 		if string(models.Counter) == dto.MType {
 			prev, err := s.metricsRepo.FindOneByTypeAndName(dto.MType, dto.Name)
@@ -68,11 +69,13 @@ func (s *Service) CreateOrUpdateMany(dtos []models.Metric) error {
 			}
 			dto.UpdateDelta(prev.Delta.Int64)
 		}
-		mds = append(mds, dto)
+		err := s.metricsRepo.SaveOrUpdate(dto)
+		if err != nil {
+			logger.Log.Error("Error when try saving", "err", err)
+			return err
+		}
 	}
-	logger.Log.Info("CreateOrUpdateMany", "payload", dtos)
-
-	return s.metricsRepo.SaveOrUpdateMany(mds)
+	return nil
 }
 
 func (s *Service) GetMetric(tp, nm string) (dto.Response, error) {
