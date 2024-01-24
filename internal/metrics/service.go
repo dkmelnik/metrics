@@ -70,6 +70,7 @@ func (s *Service) CreateOrUpdateMany(dtos []models.Metric) error {
 		}
 		mds = append(mds, dto)
 	}
+	logger.Log.Info("CreateOrUpdateMany", "payload", dtos)
 
 	return s.metricsRepo.SaveOrUpdateMany(mds)
 }
@@ -81,7 +82,7 @@ func (s *Service) GetMetric(tp, nm string) (dto.Response, error) {
 	}
 	var out dto.Response
 	out.AdaptModel(m)
-
+	logger.Log.Info("GetMetric", "payload", map[string]string{"mtype": tp, "name": nm}, "model", m)
 	return out, nil
 }
 
