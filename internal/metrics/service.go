@@ -3,9 +3,9 @@ package metrics
 import (
 	"errors"
 	"fmt"
-	"github.com/dkmelnik/metrics/internal/logger"
-	"github.com/dkmelnik/metrics/internal/metrics/dto"
 	"strconv"
+
+	"github.com/dkmelnik/metrics/internal/metrics/dto"
 
 	"github.com/dkmelnik/metrics/internal/apperrors"
 	"github.com/dkmelnik/metrics/internal/metrics/interfaces"
@@ -49,7 +49,6 @@ func (s *Service) CreateOrUpdate(dto models.Metric) error {
 	if string(models.Counter) == dto.MType {
 		prev, err := s.metricsRepo.FindOneByTypeAndName(dto.MType, dto.Name)
 		if nil != err && !errors.Is(err, apperrors.ErrNotFound) {
-			logger.Log.Error("Error while getting metric", "error", err)
 			return err
 		}
 		dto.UpdateDelta(prev.Delta.Int64)
@@ -58,20 +57,8 @@ func (s *Service) CreateOrUpdate(dto models.Metric) error {
 }
 
 func (s *Service) CreateOrUpdateMany(dtos []models.Metric) error {
-	logger.Log.Info("CreateOrUpdateMany", "payload", dtos)
-
 	for _, dto := range dtos {
-		if string(models.Counter) == dto.MType {
-			prev, err := s.metricsRepo.FindOneByTypeAndName(dto.MType, dto.Name)
-			if nil != err && !errors.Is(err, apperrors.ErrNotFound) {
-				logger.Log.Error("Error while getting metric", "error", err)
-				return err
-			}
-			dto.UpdateDelta(prev.Delta.Int64)
-		}
-		err := s.metricsRepo.SaveOrUpdate(dto)
-		if err != nil {
-			logger.Log.Error("Error when try saving", "err", err)
+		if err := s.CreateOrUpdate(dto); err != nil {
 			return err
 		}
 	}
@@ -85,7 +72,6 @@ func (s *Service) GetMetric(tp, nm string) (dto.Response, error) {
 	}
 	var out dto.Response
 	out.AdaptModel(m)
-	logger.Log.Info("GetMetric", "payload", map[string]string{"mtype": tp, "name": nm}, "model", m)
 	return out, nil
 }
 
