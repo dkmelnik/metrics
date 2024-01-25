@@ -4,10 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
+
+	"github.com/jmoiron/sqlx"
+
 	"github.com/dkmelnik/metrics/internal/apperrors"
 	"github.com/dkmelnik/metrics/internal/models"
-	"github.com/jmoiron/sqlx"
-	"time"
 )
 
 type RepositoryStorage struct {
@@ -22,25 +24,27 @@ func NewRepositoryStorage(db *sqlx.DB) (*RepositoryStorage, error) {
 }
 
 func (r *RepositoryStorage) SaveOrUpdate(ctx context.Context, metric models.Metric) error {
-	var existingData models.Metric
+	operation := func() error {
+		var existingData models.Metric
+		sq := `SELECT * FROM metrics WHERE type = $1 AND name = $2 LIMIT 1`
+		err := r.db.GetContext(ctx, &existingData, sq, metric.MType, metric.Name)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
 
-	sq := `SELECT * FROM metrics WHERE type = $1 AND name = $2 LIMIT 1`
-	err := r.db.GetContext(ctx, &existingData, sq, metric.MType, metric.Name)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
+			iq := `INSERT INTO metrics (name, type, delta, value) VALUES (:name, :type, :delta, :value)`
+			_, err = r.db.NamedExecContext(ctx, iq, metric)
+			return err
+		}
+
+		uq := `UPDATE metrics SET delta = :delta, value = :value, updated_at = :updated_at WHERE type = :type AND name = :name`
+		metric.UpdatedAT = time.Now()
+		_, err = r.db.NamedExecContext(ctx, uq, metric)
+
 		return err
 	}
-
-	if errors.Is(err, sql.ErrNoRows) {
-		iq := `INSERT INTO metrics (name, type, delta, value) VALUES (:name, :type, :delta, :value)`
-		_, err = r.db.NamedExecContext(ctx, iq, metric)
-		return err
-	}
-
-	uq := `UPDATE metrics SET delta = :delta, value = :value, updated_at = :updated_at WHERE type = :type AND name = :name`
-	metric.UpdatedAT = time.Now()
-	_, err = r.db.NamedExecContext(ctx, uq, metric)
-
-	return err
+	return apperrors.RetryWithBackoff(ctx, operation)
 }
 
 func (r *RepositoryStorage) SaveOrUpdateMany(ctx context.Context, metrics []models.Metric) error {
@@ -99,29 +103,30 @@ func (r *RepositoryStorage) TXSaveOrUpdateMany(ctx context.Context, metrics []mo
 
 func (r *RepositoryStorage) FindOneByTypeAndName(ctx context.Context, mType, mName string) (models.Metric, error) {
 	var existingData models.Metric
-	q := `SELECT * FROM metrics WHERE type = $1 AND name = $2 LIMIT 1`
-	err := r.db.GetContext(ctx, &existingData, q, mType, mName)
-
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return existingData, apperrors.ErrNotFound
+	operation := func() error {
+		q := `SELECT * FROM metrics WHERE type = $1 AND name = $2 LIMIT 1`
+		err := r.db.GetContext(ctx, &existingData, q, mType, mName)
+		if err != nil && errors.Is(err, sql.ErrNoRows) {
+			return apperrors.ErrNotFound
 		}
-		return existingData, err
+		return err
 	}
-
-	return existingData, nil
+	err := apperrors.RetryWithBackoff(ctx, operation)
+	return existingData, err
 }
 
 func (r *RepositoryStorage) Find(ctx context.Context) ([]models.Metric, error) {
 	var existingData []models.Metric
-	err := r.db.SelectContext(ctx, &existingData, "SELECT * FROM metrics")
 
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, apperrors.ErrNotFound
+	operation := func() error {
+		err := r.db.SelectContext(ctx, &existingData, "SELECT * FROM metrics")
+
+		if err != nil && errors.Is(err, sql.ErrNoRows) {
+			return apperrors.ErrNotFound
 		}
-		return nil, err
+		return err
 	}
 
-	return existingData, nil
+	err := apperrors.RetryWithBackoff(ctx, operation)
+	return existingData, err
 }
