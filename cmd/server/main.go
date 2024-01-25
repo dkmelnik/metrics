@@ -39,7 +39,6 @@ func run() error {
 
 	// TODO: если обработать тесты упадут
 	connPG, _ := db.NewPsqlConnection(c)
-	connPG = nil
 	if connPG != nil {
 		defer connPG.Close()
 		if err := migrateDatabase(
