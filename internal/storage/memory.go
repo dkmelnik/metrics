@@ -107,11 +107,17 @@ func (m *MemoryStorage) loadMetricsFromFile() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	file, err := os.OpenFile(m.filePath, os.O_RDONLY, 0666)
-	if err != nil {
-		logger.Log.ErrorWithContext(ctx, err)
+	var file *os.File
+	var err error
+
+	operation := func() error {
+		file, err = os.OpenFile(m.filePath, os.O_RDONLY, 0666)
+		return err
+	}
+	if err := apperrors.RetryWithBackoff(ctx, operation); err != nil {
 		return
 	}
+
 	defer file.Close()
 
 	var ms = make(map[string]models.Metric)
@@ -134,11 +140,16 @@ func (m *MemoryStorage) saveMetricsToFile() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	file, err := os.OpenFile(m.filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
-	if err != nil {
-		logger.Log.ErrorWithContext(ctx, err)
+	var file *os.File
+	var err error
+	operation := func() error {
+		file, err = os.OpenFile(m.filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+		return err
+	}
+	if err := apperrors.RetryWithBackoff(ctx, operation); err != nil {
 		return
 	}
+
 	defer file.Close()
 	encoder := json.NewEncoder(file)
 	if err = encoder.Encode(m.metrics); err != nil {

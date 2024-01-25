@@ -3,6 +3,7 @@ package apperrors
 import (
 	"context"
 	"errors"
+	"os"
 	"strings"
 	"time"
 
@@ -24,6 +25,8 @@ func IsRetriableError(err error) (bool, time.Duration) {
 		return true, initialRetryDelay
 	case isTestError(err):
 		return true, initialRetryDelay
+	case isFilePermissionError(err):
+		return true, initialRetryDelay
 	default:
 		return false, 0
 	}
@@ -36,6 +39,10 @@ func isPostgreSQLError(err error) bool {
 
 func isTestError(err error) bool {
 	return strings.Contains(err.Error(), "test")
+}
+
+func isFilePermissionError(err error) bool {
+	return errors.Is(err, os.ErrPermission) || errors.Is(err, os.ErrExist)
 }
 
 func RetryWithBackoff(ctx context.Context, operation func() error) error {
