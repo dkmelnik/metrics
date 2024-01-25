@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"context"
 	"github.com/dkmelnik/metrics/internal/models"
 	"github.com/dkmelnik/metrics/internal/storage"
 )
@@ -53,7 +54,7 @@ func (s *StorageMock) fillStorage() error {
 				it2 := int64(it)
 				m.SetDelta(it2)
 			}
-			err := s.SaveOrUpdate(m)
+			err := s.SaveOrUpdate(context.TODO(), m)
 			if err != nil {
 				return err
 			}

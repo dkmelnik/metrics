@@ -21,9 +21,8 @@ func NewRepositoryStorage(db *sqlx.DB) (*RepositoryStorage, error) {
 	return &RepositoryStorage{db}, nil
 }
 
-func (r *RepositoryStorage) SaveOrUpdate(metric models.Metric) error {
+func (r *RepositoryStorage) SaveOrUpdate(ctx context.Context, metric models.Metric) error {
 	var existingData models.Metric
-	ctx := context.Background()
 
 	sq := `SELECT * FROM metrics WHERE type = $1 AND name = $2 LIMIT 1`
 	err := r.db.GetContext(ctx, &existingData, sq, metric.MType, metric.Name)
@@ -44,9 +43,9 @@ func (r *RepositoryStorage) SaveOrUpdate(metric models.Metric) error {
 	return err
 }
 
-func (r *RepositoryStorage) SaveOrUpdateMany(metrics []models.Metric) error {
+func (r *RepositoryStorage) SaveOrUpdateMany(ctx context.Context, metrics []models.Metric) error {
 	for _, m := range metrics {
-		err := r.SaveOrUpdate(m)
+		err := r.SaveOrUpdate(ctx, m)
 		if err != nil {
 			return err
 		}
@@ -55,7 +54,7 @@ func (r *RepositoryStorage) SaveOrUpdateMany(metrics []models.Metric) error {
 	return nil
 }
 
-func (r *RepositoryStorage) TXSaveOrUpdateMany(metrics []models.Metric) error {
+func (r *RepositoryStorage) TXSaveOrUpdateMany(ctx context.Context, metrics []models.Metric) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
@@ -66,8 +65,6 @@ func (r *RepositoryStorage) TXSaveOrUpdateMany(metrics []models.Metric) error {
 			tx.Rollback()
 		}
 	}()
-
-	ctx := context.Background()
 
 	for _, m := range metrics {
 		var existingData models.Metric
@@ -100,9 +97,8 @@ func (r *RepositoryStorage) TXSaveOrUpdateMany(metrics []models.Metric) error {
 	return tx.Commit()
 }
 
-func (r *RepositoryStorage) FindOneByTypeAndName(mType, mName string) (models.Metric, error) {
+func (r *RepositoryStorage) FindOneByTypeAndName(ctx context.Context, mType, mName string) (models.Metric, error) {
 	var existingData models.Metric
-	ctx := context.Background()
 	q := `SELECT * FROM metrics WHERE type = $1 AND name = $2 LIMIT 1`
 	err := r.db.GetContext(ctx, &existingData, q, mType, mName)
 
@@ -116,9 +112,8 @@ func (r *RepositoryStorage) FindOneByTypeAndName(mType, mName string) (models.Me
 	return existingData, nil
 }
 
-func (r *RepositoryStorage) Find() ([]models.Metric, error) {
+func (r *RepositoryStorage) Find(ctx context.Context) ([]models.Metric, error) {
 	var existingData []models.Metric
-	ctx := context.Background()
 	err := r.db.SelectContext(ctx, &existingData, "SELECT * FROM metrics")
 
 	if err != nil {

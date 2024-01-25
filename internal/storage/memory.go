@@ -39,8 +39,8 @@ func NewMemoryStorage(storagePath string, storeInterval int, restore bool) (*Mem
 	return ms, nil
 }
 
-func (m *MemoryStorage) SaveOrUpdate(metric models.Metric) error {
-	existingMetric, err := m.FindOneByTypeAndName(metric.MType, metric.Name)
+func (m *MemoryStorage) SaveOrUpdate(ctx context.Context, metric models.Metric) error {
+	existingMetric, err := m.FindOneByTypeAndName(ctx, metric.MType, metric.Name)
 
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -60,9 +60,9 @@ func (m *MemoryStorage) SaveOrUpdate(metric models.Metric) error {
 	return nil
 }
 
-func (m *MemoryStorage) SaveOrUpdateMany(metrics []models.Metric) error {
+func (m *MemoryStorage) SaveOrUpdateMany(ctx context.Context, metrics []models.Metric) error {
 	for _, metric := range metrics {
-		err := m.SaveOrUpdate(metric)
+		err := m.SaveOrUpdate(ctx, metric)
 		if err != nil {
 			return err
 		}
@@ -70,7 +70,7 @@ func (m *MemoryStorage) SaveOrUpdateMany(metrics []models.Metric) error {
 	return nil
 }
 
-func (m *MemoryStorage) FindOneByTypeAndName(mType, mName string) (models.Metric, error) {
+func (m *MemoryStorage) FindOneByTypeAndName(ctx context.Context, mType, mName string) (models.Metric, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -83,7 +83,7 @@ func (m *MemoryStorage) FindOneByTypeAndName(mType, mName string) (models.Metric
 	return models.Metric{}, apperrors.ErrNotFound
 }
 
-func (m *MemoryStorage) Find() ([]models.Metric, error) {
+func (m *MemoryStorage) Find(ctx context.Context) ([]models.Metric, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 

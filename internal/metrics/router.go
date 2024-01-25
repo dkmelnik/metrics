@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"github.com/dkmelnik/metrics/configs"
-	"github.com/dkmelnik/metrics/internal/metrics/interfaces"
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
 
@@ -17,7 +16,7 @@ func ConfigureRouter(pgDB *sqlx.DB, storageConfig configs.Server) (*chi.Mux, err
 
 	//infrastructure
 
-	var store interfaces.MetricsRepository
+	var store Repository
 	var err error
 	if pgDB == nil {
 		store, err = storage.NewMemoryStorage(storageConfig.FileStoragePath, storageConfig.StoreInterval, storageConfig.Restore)

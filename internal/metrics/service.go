@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -8,15 +9,14 @@ import (
 	"github.com/dkmelnik/metrics/internal/metrics/dto"
 
 	"github.com/dkmelnik/metrics/internal/apperrors"
-	"github.com/dkmelnik/metrics/internal/metrics/interfaces"
 	"github.com/dkmelnik/metrics/internal/models"
 )
 
 type Service struct {
-	metricsRepo interfaces.MetricsRepository
+	metricsRepo Repository
 }
 
-func NewService(mr interfaces.MetricsRepository) *Service {
+func NewService(mr Repository) *Service {
 	return &Service{mr}
 }
 
@@ -46,14 +46,16 @@ func (s *Service) CreateOrUpdateByParams(tp, nm, vl string) error {
 }
 
 func (s *Service) CreateOrUpdate(dto models.Metric) error {
+	ctx := context.Background()
+
 	if string(models.Counter) == dto.MType {
-		prev, err := s.metricsRepo.FindOneByTypeAndName(dto.MType, dto.Name)
+		prev, err := s.metricsRepo.FindOneByTypeAndName(ctx, dto.MType, dto.Name)
 		if nil != err && !errors.Is(err, apperrors.ErrNotFound) {
 			return err
 		}
 		dto.UpdateDelta(prev.Delta.Int64)
 	}
-	return s.metricsRepo.SaveOrUpdate(dto)
+	return s.metricsRepo.SaveOrUpdate(ctx, dto)
 }
 
 func (s *Service) CreateOrUpdateMany(dtos []models.Metric) error {
@@ -66,7 +68,9 @@ func (s *Service) CreateOrUpdateMany(dtos []models.Metric) error {
 }
 
 func (s *Service) GetMetric(tp, nm string) (dto.Response, error) {
-	m, err := s.metricsRepo.FindOneByTypeAndName(tp, nm)
+	ctx := context.Background()
+
+	m, err := s.metricsRepo.FindOneByTypeAndName(ctx, tp, nm)
 	if err != nil {
 		return dto.Response{}, err
 	}
@@ -76,7 +80,9 @@ func (s *Service) GetMetric(tp, nm string) (dto.Response, error) {
 }
 
 func (s *Service) GetMetricValue(tp, nm string) (interface{}, error) {
-	m, err := s.metricsRepo.FindOneByTypeAndName(tp, nm)
+	ctx := context.Background()
+
+	m, err := s.metricsRepo.FindOneByTypeAndName(ctx, tp, nm)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +90,9 @@ func (s *Service) GetMetricValue(tp, nm string) (interface{}, error) {
 }
 
 func (s *Service) GetAllInHTML() (string, error) {
-	metrics, err := s.metricsRepo.Find()
+	ctx := context.Background()
+
+	metrics, err := s.metricsRepo.Find(ctx)
 	if err != nil {
 		return "", err
 	}
