@@ -3,6 +3,7 @@ FROM golang:1.21.5-bookworm AS debug
 WORKDIR /app
 
 RUN CGO_ENABLED=0 go install github.com/go-delve/delve/cmd/dlv@latest
+RUN curl -L https://github.com/golang-migrate/migrate/releases/download/v4.16.2/migrate.linux-amd64.tar.gz | tar xvz -C $(go env GOPATH)/bin
 RUN curl -sSfL https://raw.githubusercontent.com/cosmtrek/air/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
 
 CMD ["sh", "-c", "air --build.cmd 'go build -o bin/server cmd/server/main.go' --build.bin 'dlv exec --accept-multiclient --log --headless --continue --listen :2345 --api-version 2 ./bin/server'"]
@@ -19,6 +20,8 @@ FROM golang:1.21.5-alpine3.17 AS production
 
 WORKDIR /app
 
+RUN apk --no-cache add curl
+RUN curl -L https://github.com/golang-migrate/migrate/releases/download/v4.16.2/migrate.linux-amd64.tar.gz | tar xvz -C $(go env GOPATH)/bin
 COPY --from=build /app/bin/server ./main
 
 CMD [ "./main"]

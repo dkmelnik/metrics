@@ -6,12 +6,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"reflect"
 	"time"
 
 	"github.com/go-resty/resty/v2"
+
+	"github.com/dkmelnik/metrics/internal/logger"
 )
 
 func Send(ctx context.Context, t *time.Ticker, ch <-chan *Metrics, serverURL string) {
@@ -37,7 +38,7 @@ func loopMetricsAndSend(md *Metrics, serverURL string) {
 		if tag != "" {
 			body, err := buildCompressRequestBody(tag, field.Name, value.Interface())
 			if err != nil {
-				log.Println(err)
+				logger.Log.ErrorWithContext(context.Background(), err)
 				continue
 			}
 			sendMetricRequest(serverURL, body)
@@ -92,11 +93,11 @@ func sendMetricRequest(url string, body []byte) {
 		Post(fmt.Sprintf("%s/update/", url))
 
 	if err != nil {
-		log.Println(err)
+		logger.Log.Error("sendMetricRequest", "err", err.Error(), "body", body)
 		return
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		log.Printf("Unexpected status code: %d", resp.StatusCode())
+		logger.Log.Error("sendMetricRequest", "err", "status not ok", "body", body, "resp", resp.Body())
 	}
 }

@@ -8,13 +8,14 @@ services:
       dockerfile: docker/Dockerfile-agent
       target: production
     environment:
+      - TZ=Europe/Moscow
       - LOG_LEVEL=info
-      - ADDRESS=http://localhost:8080
+      - APP_MODE=production
+      - ADDRESS=http://server:8080
       - REPORT_INTERVAL=10
       - POLL_INTERVAL=2
     ports:
       - "80:8080"
-
 
   server:
     container_name: server
@@ -23,13 +24,28 @@ services:
       dockerfile: docker/Dockerfile-server
       target: production
     environment:
+      - TZ=Europe/Moscow
       - LOG_LEVEL=info
       - ADDRESS=0.0.0.0:8080
       - FILE_STORAGE_PATH=/app/tmp/metrics-db.json
       - RESTORE=true
       - STORE_INTERVAL=10
+      - APP_MODE=production
+      - DATABASE_DSN=host=server_db port=5432 user=web dbname=local sslmode=disable password=web
+    depends_on:
+      - server_db
     ports:
       - "81:8080"
 
+  server_db:
+    image: postgres:16.1-alpine3.19
+    container_name: server_db
+    environment:
+      TZ: "Europe/Moscow"
+      POSTGRES_DB: "local"
+      POSTGRES_USER: "web"
+      POSTGRES_PASSWORD: "web"
+    ports:
+      - "5432:5432"
 
 

@@ -2,27 +2,30 @@ package main
 
 import (
 	"context"
-	"log"
+	"os"
 	"time"
 
 	"github.com/dkmelnik/metrics/configs"
 	"github.com/dkmelnik/metrics/internal/collect"
+	"github.com/dkmelnik/metrics/internal/logger"
 )
 
 func main() {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	log.Println("agent is running!")
 	if err := run(); err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 }
 
 func run() error {
-	if err := configs.CheckUnknownFlags(); err != nil {
+	c := configs.NewAgent()
+
+	if err := logger.Setup(c, os.Stdout); err != nil {
 		return err
 	}
 
-	c := configs.NewAgent()
+	if err := configs.CheckUnknownFlags(); err != nil {
+		return err
+	}
 
 	metricsChan := make(chan *collect.Metrics)
 
@@ -39,6 +42,8 @@ func run() error {
 	sendPeriod := time.NewTicker(time.Second * time.Duration(c.ReportInterval))
 	defer sendPeriod.Stop()
 	go collect.Send(ctx, sendPeriod, metricsChan, c.Addr)
+
+	logger.Log.Info("AGENT RUNNING", "ReportInterval", c.ReportInterval, "PollInterval", c.PollInterval)
 
 	done := make(chan struct{})
 	<-done

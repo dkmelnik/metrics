@@ -8,7 +8,7 @@ import (
 )
 
 type Agent struct {
-	Addr, LogLevel               string
+	Addr, Mode, Level            string
 	ReportInterval, PollInterval int
 }
 
@@ -18,17 +18,23 @@ func NewAgent() Agent {
 	flag.StringVar(&cb.Addr, "a", "http://localhost:8080", "server by collected metric address")
 	flag.IntVar(&cb.ReportInterval, "r", 10, "period for sending metrics to the server")
 	flag.IntVar(&cb.PollInterval, "p", 2, "metrics collection period")
-	flag.StringVar(&cb.LogLevel, "l", "warn", "logging level. If empty, warn is used")
+	flag.StringVar(&cb.Mode, "m", "production", "app mode. If empty, production is used")
+	flag.StringVar(&cb.Level, "l", "info", "logging level. If empty, warn is used")
 	flag.Parse()
 
 	l, ok := os.LookupEnv("LOG_LEVEL")
 	if ok {
-		cb.LogLevel = l
+		cb.Level = l
 	}
 
-	s, ok := os.LookupEnv("ADDRESS")
+	s, ok := os.LookupEnv("APP_MODE")
 	if ok {
-		cb.Addr = s
+		cb.Mode = s
+	}
+
+	sa, ok := os.LookupEnv("ADDRESS")
+	if ok {
+		cb.Addr = sa
 	}
 
 	s, ok = os.LookupEnv("REPORT_INTERVAL")
@@ -50,4 +56,12 @@ func NewAgent() Agent {
 		cb.Addr = "http://" + cb.Addr
 	}
 	return cb
+}
+
+func (c Agent) GetLevel() string {
+	return c.Level
+}
+
+func (c Agent) GetMode() string {
+	return c.Mode
 }

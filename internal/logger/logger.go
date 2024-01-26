@@ -1,12 +1,20 @@
 package logger
 
-import "net/http"
+import (
+	"context"
+	"net/http"
+)
 
-type Logger interface {
-	RequestLogger(h http.Handler) http.Handler
-	Trace(args ...interface{})
-	Debug(args ...interface{})
-	Info(args ...interface{})
-	Error(args ...interface{})
-	Fatal(args ...interface{})
+type ILogger interface {
+	RequestLog(h http.Handler) http.Handler
+	Debug(msg string, args ...any)
+	Info(msg string, args ...any)
+	Warn(msg string, args ...any)
+	Error(msg string, args ...any)
+	ErrorWithContext(ctx context.Context, err error)
+}
+
+type IConfig interface {
+	GetLevel() string
+	GetMode() string
 }
