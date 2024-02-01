@@ -8,7 +8,7 @@ import (
 )
 
 type Agent struct {
-	Addr, Mode, Level            string
+	Addr, Mode, Level, Key       string
 	ReportInterval, PollInterval int
 }
 
@@ -20,7 +20,13 @@ func NewAgent() Agent {
 	flag.IntVar(&cb.PollInterval, "p", 2, "metrics collection period")
 	flag.StringVar(&cb.Mode, "m", "production", "app mode. If empty, production is used")
 	flag.StringVar(&cb.Level, "l", "info", "logging level. If empty, warn is used")
+	flag.StringVar(&cb.Key, "k", "", "signature key")
 	flag.Parse()
+
+	k, ok := os.LookupEnv("KEY")
+	if ok {
+		cb.Key = k
+	}
 
 	l, ok := os.LookupEnv("LOG_LEVEL")
 	if ok {

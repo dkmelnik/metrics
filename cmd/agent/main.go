@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/dkmelnik/metrics/internal/sign"
 	"os"
 	"time"
 
@@ -41,7 +42,13 @@ func run() error {
 	// SENDER
 	sendPeriod := time.NewTicker(time.Second * time.Duration(c.ReportInterval))
 	defer sendPeriod.Stop()
-	go collect.Send(ctx, sendPeriod, metricsChan, c.Addr)
+
+	var signer collect.Signer
+	if c.Key != "" {
+		signer = sign.NewSign(c.Key)
+	}
+
+	go collect.Send(ctx, sendPeriod, metricsChan, c.Addr, signer)
 
 	logger.Log.Info("AGENT RUNNING", "ReportInterval", c.ReportInterval, "PollInterval", c.PollInterval)
 

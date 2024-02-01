@@ -3,6 +3,8 @@ package main
 import (
 	"database/sql"
 	"errors"
+	"github.com/dkmelnik/metrics/internal/sign"
+	"github.com/dkmelnik/metrics/internal/storage"
 	"os"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -63,7 +65,16 @@ func run() error {
 		}
 	}
 
-	r, err := metrics.ConfigureRouter(connPG, c)
+	var store metrics.Repository
+	if connPG != nil {
+		store, _ = storage.NewRepositoryStorage(connPG)
+	} else if connSQLITE != nil {
+		store, _ = storage.NewMemoryStorage(c.FileStoragePath, c.StoreInterval, c.Restore)
+	}
+
+	signer := sign.NewSign(c.Key)
+
+	r, err := metrics.ConfigureRouter(connPG, store, signer)
 	if err != nil {
 		return err
 	}

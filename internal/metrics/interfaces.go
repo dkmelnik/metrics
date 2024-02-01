@@ -11,3 +11,7 @@ type Repository interface {
 	FindOneByTypeAndName(ctx context.Context, mType, mName string) (models.Metric, error)
 	Find(ctx context.Context) ([]models.Metric, error)
 }
+
+type Signer interface {
+	Equal(sign, data []byte) bool
+}

@@ -7,9 +7,9 @@ import (
 )
 
 type Server struct {
-	Addr, DBConnectStr, Mode, Level, FileStoragePath string
-	StoreInterval                                    int
-	Restore                                          bool
+	Addr, DBConnectStr, Mode, Level, FileStoragePath, Key string
+	StoreInterval                                         int
+	Restore                                               bool
 }
 
 func NewServer() Server {
@@ -22,7 +22,13 @@ func NewServer() Server {
 	flag.StringVar(&cb.FileStoragePath, "f", "/tmp/metrics-db.json", "full name of the file where the current values are saved. If empty, /tmp/metrics-db.json is used")
 	flag.IntVar(&cb.StoreInterval, "i", 300, "server saved metrics to disk. If empty, 300 is used")
 	flag.BoolVar(&cb.Restore, "r", true, "load or not previously saved values. If empty, true is used")
+	flag.StringVar(&cb.Key, "k", "", "signature key")
 	flag.Parse()
+
+	k, ok := os.LookupEnv("KEY")
+	if ok {
+		cb.Key = k
+	}
 
 	f, ok := os.LookupEnv("FILE_STORAGE_PATH")
 	if ok {

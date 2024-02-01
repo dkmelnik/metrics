@@ -15,18 +15,18 @@ import (
 	"github.com/dkmelnik/metrics/internal/logger"
 )
 
-func Send(ctx context.Context, t *time.Ticker, ch <-chan *Metrics, serverURL string) {
+func Send(ctx context.Context, t *time.Ticker, ch <-chan *Metrics, serverURL string, signer Signer) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			loopMetricsAndSend(<-ch, serverURL)
+			loopMetricsAndSend(<-ch, serverURL, signer)
 		}
 	}
 }
 
-func loopMetricsAndSend(md *Metrics, serverURL string) {
+func loopMetricsAndSend(md *Metrics, serverURL string, signer Signer) {
 	metricType := reflect.TypeOf(*md)
 	metricValue := reflect.ValueOf(*md)
 
@@ -41,7 +41,11 @@ func loopMetricsAndSend(md *Metrics, serverURL string) {
 				logger.Log.ErrorWithContext(context.Background(), err)
 				continue
 			}
-			sendMetricRequest(serverURL, body)
+			var hash string
+			if signer != nil {
+				hash = signer.HashData(body)
+			}
+			sendMetricRequest(serverURL, body, hash)
 		}
 	}
 }
@@ -81,14 +85,20 @@ func buildCompressRequestBody(mt string, mn string, vl interface{}) ([]byte, err
 	return b.Bytes(), nil
 }
 
-func sendMetricRequest(url string, body []byte) {
+func sendMetricRequest(url string, body []byte, hash string) {
 	client := resty.New()
 
+	header := map[string]string{
+		"Content-Type":     "application/json",
+		"Content-Encoding": "gzip",
+	}
+
+	if hash != "" {
+		header["HashSHA256"] = hash
+	}
+
 	resp, err := client.R().
-		SetHeaders(map[string]string{
-			"Content-Type":     "application/json",
-			"Content-Encoding": "gzip",
-		}).
+		SetHeaders(header).
 		SetBody(body).
 		Post(fmt.Sprintf("%s/update/", url))
 

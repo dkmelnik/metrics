@@ -84,7 +84,7 @@ func Test_Send(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	go Send(ctx, sendPeriod, metricsChan, server.URL)
+	go Send(ctx, sendPeriod, metricsChan, server.URL, nil)
 
 	metricsChan <- md
 
