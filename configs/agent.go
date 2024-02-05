@@ -8,8 +8,8 @@ import (
 )
 
 type Agent struct {
-	Addr, Mode, Level, Key       string
-	ReportInterval, PollInterval int
+	Addr, Mode, Level, Key                  string
+	ReportInterval, PollInterval, RateLimit int
 }
 
 func NewAgent() Agent {
@@ -21,6 +21,7 @@ func NewAgent() Agent {
 	flag.StringVar(&cb.Mode, "m", "production", "app mode. If empty, production is used")
 	flag.StringVar(&cb.Level, "l", "info", "logging level. If empty, warn is used")
 	flag.StringVar(&cb.Key, "k", "", "signature key")
+	flag.IntVar(&cb.RateLimit, "l", 5, "req rate limit. If empty, 5 is used")
 	flag.Parse()
 
 	k, ok := os.LookupEnv("KEY")
@@ -33,9 +34,9 @@ func NewAgent() Agent {
 		cb.Level = l
 	}
 
-	s, ok := os.LookupEnv("APP_MODE")
+	m, ok := os.LookupEnv("APP_MODE")
 	if ok {
-		cb.Mode = s
+		cb.Mode = m
 	}
 
 	sa, ok := os.LookupEnv("ADDRESS")
@@ -43,11 +44,19 @@ func NewAgent() Agent {
 		cb.Addr = sa
 	}
 
-	s, ok = os.LookupEnv("REPORT_INTERVAL")
+	s, ok := os.LookupEnv("REPORT_INTERVAL")
 	if ok {
 		i, err := strconv.Atoi(s)
 		if err == nil {
 			cb.ReportInterval = i
+		}
+	}
+
+	r, ok := os.LookupEnv("REPORT_INTERVAL")
+	if ok {
+		i, err := strconv.Atoi(r)
+		if err == nil {
+			cb.RateLimit = i
 		}
 	}
 
