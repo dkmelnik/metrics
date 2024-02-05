@@ -19,7 +19,7 @@ func NewAgent() Agent {
 	flag.IntVar(&cb.ReportInterval, "r", 10, "period for sending metrics to the server")
 	flag.IntVar(&cb.PollInterval, "p", 2, "metrics collection period")
 	flag.StringVar(&cb.Mode, "m", "production", "app mode. If empty, production is used")
-	flag.StringVar(&cb.Level, "l", "info", "logging level. If empty, warn is used")
+	flag.StringVar(&cb.Level, "la", "info", "logging level. If empty, warn is used")
 	flag.StringVar(&cb.Key, "k", "", "signature key")
 	flag.IntVar(&cb.RateLimit, "l", 5, "req rate limit. If empty, 5 is used")
 	flag.Parse()
