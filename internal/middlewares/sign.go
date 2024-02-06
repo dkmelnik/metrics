@@ -2,7 +2,6 @@ package middlewares
 
 import (
 	"bytes"
-	"encoding/hex"
 	"io"
 	"net/http"
 )
@@ -25,12 +24,7 @@ func (m *MiddlewareManager) Sign(next http.Handler) http.Handler {
 		}
 		r.Body = io.NopCloser(bytes.NewReader(body))
 
-		hash, err := hex.DecodeString(r.Header.Get("HashSHA256"))
-		if err != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
-		if !m.sign.Equal(hash, body) {
+		if !m.sign.Equal(r.Header.Get("HashSHA256"), body) {
 			http.Error(w, "invalid signature", http.StatusBadRequest)
 			return
 		}

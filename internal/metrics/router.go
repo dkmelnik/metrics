@@ -4,21 +4,21 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
 
-	"github.com/dkmelnik/metrics/internal/logger"
 	"github.com/dkmelnik/metrics/internal/middlewares"
 )
 
 func ConfigureRouter(
 	pgDB *sqlx.DB,
 	storage Repository,
-	signer Signer,
+	signer middlewares.Signer,
 ) (*chi.Mux, error) {
 	r := chi.NewRouter()
 
-	r.Use(logger.Log.RequestLog)
+	//r.Use(logger.Log.RequestLog)
 
 	// infrastructure
 	m := middlewares.NewMiddlewareManager(signer)
+	r.Use(m.Recovery)
 
 	//metrics
 	service := NewService(storage)

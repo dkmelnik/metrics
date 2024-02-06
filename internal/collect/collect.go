@@ -2,12 +2,12 @@ package collect
 
 import (
 	"context"
+	"github.com/dkmelnik/metrics/internal/logger"
 	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
 	"math/rand"
 	"runtime"
 	"time"
-
-	"github.com/shirou/gopsutil/v3/mem"
 )
 
 func MetricsGenerator(ctx context.Context, t *time.Ticker) chan *Metrics {
@@ -25,7 +25,10 @@ func MetricsGenerator(ctx context.Context, t *time.Ticker) chan *Metrics {
 			case <-t.C:
 				pollCount++
 
-				memr, _ := mem.VirtualMemory()
+				memr, err := mem.VirtualMemory()
+				if err != nil {
+					logger.Log.Error("failed to get memory info", "error", err)
+				}
 				runtime.ReadMemStats(&m)
 
 				cpuUsage, _ := cpu.Percent(0, false)

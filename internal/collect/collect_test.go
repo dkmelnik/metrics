@@ -8,13 +8,11 @@ import (
 )
 
 func TestCollect(t *testing.T) {
-	metricsChan := make(chan *Metrics)
-
 	mockTicker := time.NewTicker(100 * time.Millisecond)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	go Collect(ctx, mockTicker, metricsChan)
+	inputCh := MetricsGenerator(ctx, mockTicker)
 
 	time.AfterFunc(1*time.Second, func() {
 		mockTicker.Stop()
@@ -22,7 +20,7 @@ func TestCollect(t *testing.T) {
 	})
 
 	metricsReceived := make([]*Metrics, 0)
-	for metric := range metricsChan {
+	for metric := range inputCh {
 		metricsReceived = append(metricsReceived, metric)
 	}
 

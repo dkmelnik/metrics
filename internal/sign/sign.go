@@ -3,23 +3,24 @@ package sign
 import (
 	"crypto/hmac"
 	"crypto/sha256"
-	"crypto/subtle"
-	"encoding/hex"
-	"hash"
+	"encoding/base64"
 )
 
 type Sign struct {
-	hash hash.Hash
+	secret []byte
 }
 
 func NewSign(secret string) *Sign {
-	return &Sign{hmac.New(sha256.New, []byte(secret))}
+	return &Sign{[]byte(secret)}
 }
 
 func (s *Sign) HashData(data []byte) string {
-	return hex.EncodeToString(s.hash.Sum(data))
+	h := hmac.New(sha256.New, s.secret)
+	h.Write(data)
+	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }
 
-func (s *Sign) Equal(sign, data []byte) bool {
-	return subtle.ConstantTimeCompare(sign, s.hash.Sum(data)) == 1
+func (s *Sign) Equal(sign string, data []byte) bool {
+	calculatedHMAC := s.HashData(data)
+	return calculatedHMAC == sign
 }

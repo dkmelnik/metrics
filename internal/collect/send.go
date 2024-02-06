@@ -114,12 +114,18 @@ func sendMetricRequest(url string, body []byte, hash string) {
 		Post(fmt.Sprintf("%s/update/", url))
 
 	if err != nil {
-		logger.Log.Error("sendMetricRequest", "err", err.Error(), "body", body)
+		logger.Log.Error("sendMetricRequest", "err", err.Error(), "body", string(body))
 		return
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		logger.Log.Error("sendMetricRequest", "err", "status not ok", "body", body, "resp", resp.Body())
+		logger.Log.Error(
+			"sendMetricRequest",
+			"err", "status not ok",
+			"body", string(body),
+			"resp", string(resp.Body()),
+			"code", resp.StatusCode(),
+		)
 	}
 }
 
