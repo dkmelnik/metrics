@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/dkmelnik/metrics/configs"
 	"io"
 	"math/rand"
 	"net/http"
@@ -16,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/dkmelnik/metrics/internal/metrics/mock"
+	"github.com/dkmelnik/metrics/internal/storage"
 )
 
 func testRequest(t *testing.T, ts *httptest.Server, method,
@@ -89,7 +89,12 @@ func Test_CreateOrUpdateByParams(t *testing.T) {
 		},
 	}
 
-	r, err := ConfigureRouter(nil, configs.Server{FileStoragePath: "/tmp/metrics-db.json", StoreInterval: 10, Restore: false})
+	store, err := storage.NewMemoryStorage("/tmp/metrics-db.json", 10, false)
+	if err != nil {
+		t.Error(err)
+	}
+
+	r, err := ConfigureRouter(nil, store, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -254,7 +259,12 @@ func Test_CreateOrUpdateByJSON(t *testing.T) {
 			},
 		},
 	}
-	r, err := ConfigureRouter(nil, configs.Server{FileStoragePath: "/tmp/metrics-db.json", StoreInterval: 10, Restore: false})
+	store, err := storage.NewMemoryStorage("/tmp/metrics-db.json", 10, false)
+	if err != nil {
+		t.Error(err)
+	}
+
+	r, err := ConfigureRouter(nil, store, nil)
 	if err != nil {
 		t.Error(err)
 	}

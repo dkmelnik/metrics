@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func Compress(next http.Handler) http.Handler {
+func (m *MiddlewareManager) Compress(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get(`Content-Encoding`) == `gzip` {
 			gz, err := gzip.NewReader(r.Body)
@@ -15,7 +15,7 @@ func Compress(next http.Handler) http.Handler {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			r.Body = gz
+			r.Body = io.NopCloser(gz)
 			defer gz.Close()
 		}
 

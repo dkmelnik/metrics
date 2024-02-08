@@ -14,6 +14,7 @@ services:
       - ADDRESS=http://server:8080
       - REPORT_INTERVAL=10
       - POLL_INTERVAL=2
+      - KEY=some_key
     ports:
       - "80:8080"
 
@@ -32,6 +33,7 @@ services:
       - STORE_INTERVAL=10
       - APP_MODE=production
       - DATABASE_DSN=host=server_db port=5432 user=web dbname=local sslmode=disable password=web
+      - KEY=some_key
     depends_on:
       - server_db
     ports:

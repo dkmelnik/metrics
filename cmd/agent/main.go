@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
-	"os"
-	"time"
-
 	"github.com/dkmelnik/metrics/configs"
 	"github.com/dkmelnik/metrics/internal/collect"
 	"github.com/dkmelnik/metrics/internal/logger"
+	"github.com/dkmelnik/metrics/internal/sign"
+	"os"
+	"time"
 )
 
 func main() {
@@ -27,21 +27,24 @@ func run() error {
 		return err
 	}
 
-	metricsChan := make(chan *collect.Metrics)
-
-	// CTX for stopping sender and collector
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// COLLECTOR
 	collectPeriod := time.NewTicker(time.Second * time.Duration(c.PollInterval))
 	defer collectPeriod.Stop()
-	go collect.Collect(ctx, collectPeriod, metricsChan)
+
+	metricsChan := collect.MetricsGenerator(ctx, collectPeriod)
 
 	// SENDER
 	sendPeriod := time.NewTicker(time.Second * time.Duration(c.ReportInterval))
 	defer sendPeriod.Stop()
-	go collect.Send(ctx, sendPeriod, metricsChan, c.Addr)
+
+	var signer collect.Signer
+	if c.Key != "" {
+		signer = sign.NewSign(c.Key)
+	}
+
+	go collect.Send(ctx, sendPeriod, metricsChan, c.Addr, signer)
 
 	logger.Log.Info("AGENT RUNNING", "ReportInterval", c.ReportInterval, "PollInterval", c.PollInterval)
 

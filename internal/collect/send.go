@@ -15,34 +15,49 @@ import (
 	"github.com/dkmelnik/metrics/internal/logger"
 )
 
-func Send(ctx context.Context, t *time.Ticker, ch <-chan *Metrics, serverURL string) {
+func Send(ctx context.Context, t *time.Ticker, ch <-chan *Metrics, serverURL string, signer Signer) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			loopMetricsAndSend(<-ch, serverURL)
+			loopMetricsAndSend(<-ch, serverURL, signer)
 		}
 	}
 }
 
-func loopMetricsAndSend(md *Metrics, serverURL string) {
+func loopMetricsAndSend(md *Metrics, serverURL string, signer Signer) {
 	metricType := reflect.TypeOf(*md)
 	metricValue := reflect.ValueOf(*md)
+
+	workPayloads := make([]workPayload, 0)
 
 	for i := 0; i < metricType.NumField(); i++ {
 		field := metricType.Field(i)
 		value := metricValue.Field(i)
 
 		tag := field.Tag.Get("metric")
-		if tag != "" {
-			body, err := buildCompressRequestBody(tag, field.Name, value.Interface())
-			if err != nil {
-				logger.Log.ErrorWithContext(context.Background(), err)
-				continue
-			}
-			sendMetricRequest(serverURL, body)
+		if tag == "" {
+			continue
 		}
+		body, err := buildCompressRequestBody(tag, field.Name, value.Interface())
+		if err != nil {
+			logger.Log.ErrorWithContext(context.Background(), err)
+			continue
+		}
+		var hash string
+		if signer != nil {
+			hash = signer.HashData(body)
+		}
+		workPayloads = append(workPayloads, workPayload{url: serverURL, body: body, hash: hash})
+	}
+
+	limit := 5
+
+	jobs := generator(workPayloads, limit)
+
+	for w := 0; w <= limit; w++ {
+		go worker(jobs)
 	}
 }
 
@@ -81,23 +96,58 @@ func buildCompressRequestBody(mt string, mn string, vl interface{}) ([]byte, err
 	return b.Bytes(), nil
 }
 
-func sendMetricRequest(url string, body []byte) {
+func sendMetricRequest(url string, body []byte, hash string) {
 	client := resty.New()
 
+	header := map[string]string{
+		"Content-Type":     "application/json",
+		"Content-Encoding": "gzip",
+	}
+
+	if hash != "" {
+		header["HashSHA256"] = hash
+	}
+
 	resp, err := client.R().
-		SetHeaders(map[string]string{
-			"Content-Type":     "application/json",
-			"Content-Encoding": "gzip",
-		}).
+		SetHeaders(header).
 		SetBody(body).
 		Post(fmt.Sprintf("%s/update/", url))
 
 	if err != nil {
-		logger.Log.Error("sendMetricRequest", "err", err.Error(), "body", body)
+		logger.Log.Error("sendMetricRequest", "err", err.Error(), "body", string(body))
 		return
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		logger.Log.Error("sendMetricRequest", "err", "status not ok", "body", body, "resp", resp.Body())
+		logger.Log.Error(
+			"sendMetricRequest",
+			"err", "status not ok",
+			"body", string(body),
+			"resp", string(resp.Body()),
+			"code", resp.StatusCode(),
+		)
+	}
+}
+
+func generator(input []workPayload, limit int) chan workPayload {
+	out := make(chan workPayload, limit)
+	go func() {
+		defer close(out)
+		for _, n := range input {
+			out <- n
+		}
+	}()
+	return out
+}
+
+type workPayload struct {
+	url  string
+	body []byte
+	hash string
+}
+
+func worker(jobs <-chan workPayload) {
+	for j := range jobs {
+		sendMetricRequest(j.url, j.body, j.hash)
 	}
 }
