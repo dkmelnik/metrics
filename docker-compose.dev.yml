@@ -1,17 +1,17 @@
 version: "3.4"
 
 services:
-  agent:
-    build:
-      target: debug
-    ports:
-      - "80:8080"
-      - "2345:2345"
-    environment:
-      - LOG_LEVEL=info
-      - APP_MODE=development
-    volumes:
-      - .:/app
+#  agent:
+#    build:
+#      target: debug
+#    ports:
+#      - "80:8080"
+#      - "2345:2345"
+#    environment:
+#      - LOG_LEVEL=info
+#      - APP_MODE=development
+#    volumes:
+#      - .:/app
 
   server:
     build:
