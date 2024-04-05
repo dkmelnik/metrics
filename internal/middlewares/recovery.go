@@ -2,8 +2,9 @@ package middlewares
 
 import (
 	"fmt"
-	"github.com/dkmelnik/metrics/internal/logger"
 	"net/http"
+
+	"github.com/dkmelnik/metrics/internal/logger"
 )
 
 func (m *MiddlewareManager) Recovery(next http.Handler) http.Handler {

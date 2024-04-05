@@ -2,12 +2,14 @@ package collect
 
 import (
 	"context"
-	"github.com/dkmelnik/metrics/internal/logger"
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/mem"
 	"math/rand"
 	"runtime"
 	"time"
+
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
+
+	"github.com/dkmelnik/metrics/internal/logger"
 )
 
 func MetricsGenerator(ctx context.Context, t *time.Ticker) chan *Metrics {

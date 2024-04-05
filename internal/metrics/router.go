@@ -9,7 +9,7 @@ import (
 
 func ConfigureRouter(
 	pgDB *sqlx.DB,
-	storage Repository,
+	storage IRepository,
 	signer middlewares.Signer,
 ) (*chi.Mux, error) {
 	r := chi.NewRouter()

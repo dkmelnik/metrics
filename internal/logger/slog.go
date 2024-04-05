@@ -3,14 +3,15 @@ package logger
 import (
 	"context"
 	"encoding/json"
-	"github.com/fatih/color"
-	"github.com/mdobak/go-xerrors"
 	"io"
 	"log"
 	"log/slog"
 	"net/http"
 	"path/filepath"
 	"time"
+
+	"github.com/fatih/color"
+	"github.com/mdobak/go-xerrors"
 )
 
 /*

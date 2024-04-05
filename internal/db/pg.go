@@ -1,9 +1,10 @@
 package db
 
 import (
-	"github.com/dkmelnik/metrics/configs"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+
+	"github.com/dkmelnik/metrics/configs"
 )
 
 func NewPsqlConnection(c configs.Server) (*sqlx.DB, error) {

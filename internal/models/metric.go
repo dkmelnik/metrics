@@ -2,9 +2,10 @@ package models
 
 import (
 	"database/sql"
-	"github.com/dkmelnik/metrics/internal/apperrors"
 	"math"
 	"time"
+
+	"github.com/dkmelnik/metrics/internal/apperrors"
 )
 
 type MetricType string

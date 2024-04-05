@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
+	"os"
+	"time"
+
 	"github.com/dkmelnik/metrics/configs"
 	"github.com/dkmelnik/metrics/internal/collect"
 	"github.com/dkmelnik/metrics/internal/logger"
 	"github.com/dkmelnik/metrics/internal/sign"
-	"os"
-	"time"
 )
 
 func main() {

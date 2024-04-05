@@ -13,10 +13,10 @@ import (
 )
 
 type Service struct {
-	metricsRepo Repository
+	metricsRepo IRepository
 }
 
-func NewService(mr Repository) *Service {
+func NewService(mr IRepository) *Service {
 	return &Service{mr}
 }
 

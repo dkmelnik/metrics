@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
+	"sync"
+	"time"
+
 	"github.com/dkmelnik/metrics/internal/apperrors"
 	"github.com/dkmelnik/metrics/internal/logger"
 	"github.com/dkmelnik/metrics/internal/models"
 	"github.com/dkmelnik/metrics/internal/utils"
-	"os"
-	"sync"
-	"time"
 )
 
 type MemoryStorage struct {
