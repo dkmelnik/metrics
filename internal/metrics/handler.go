@@ -89,8 +89,8 @@ func (h *Handler) CreateOrUpdateByJSON(rw http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var out dto.Response
-	out.AdaptModel(model)
+	var out dto.Details
+	out.FillFromModel(model)
 
 	marshal, err := json.Marshal(out)
 	if err != nil {
@@ -151,9 +151,9 @@ func (h *Handler) CreateOrUpdateMany(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var out = make([]dto.Response, len(mds))
+	var out = make([]dto.Details, len(mds))
 	for idx, v := range mds {
-		out[idx].AdaptModel(v)
+		out[idx].FillFromModel(v)
 	}
 
 	marshal, err := json.Marshal(out)

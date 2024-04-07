@@ -8,21 +8,33 @@ import (
 	"github.com/dkmelnik/metrics/internal/apperrors"
 )
 
+// MetricType represents the type of a metric, which can be either "gauge" or "counter".
 type MetricType string
 
-var (
-	Gauge   MetricType = "gauge"
+// Constants representing the two possible types of metrics.
+const (
+	// Gauge represents a metric type that measures a value at a particular point in time.
+	Gauge MetricType = "gauge"
+	// Counter represents a metric type that measures a continuously increasing value over time.
 	Counter MetricType = "counter"
 )
 
+// Metric represents a data structure for storing metric information.
 type Metric struct {
-	ID        string          `json:"id" db:"id"`                 // имя метрики
-	Name      string          `json:"name" db:"name"`             // параметр, принимающий значение gauge или counter
-	MType     string          `json:"type" db:"type"`             // параметр, принимающий значение gauge или counter
-	Delta     sql.NullInt64   `json:"delta,omitempty" db:"delta"` // значение метрики в случае передачи counter
-	Value     sql.NullFloat64 `json:"value,omitempty" db:"value"` // значение метрики в случае передачи gauge
-	CreatedAT time.Time       `json:"createdAt" db:"created_at"`
-	UpdatedAT time.Time       `json:"updatedAt" db:"updated_at"`
+	// ID is the unique identifier of the metric.
+	ID string `json:"id" db:"id"`
+	// Name is the name of the metric.
+	Name string `json:"name" db:"name"`
+	// MType indicates the type of the metric, which can be either "gauge" or "counter".
+	MType string `json:"type" db:"type"`
+	// Delta represents the change in value of the metric in case of a "counter" type.
+	Delta sql.NullInt64 `json:"delta,omitempty" db:"delta"`
+	// Value represents the value of the metric in case of a "gauge" type.
+	Value sql.NullFloat64 `json:"value,omitempty" db:"value"`
+	// CreatedAt represents the timestamp when the metric was created.
+	CreatedAt time.Time `json:"createdAt" db:"created_at"`
+	// UpdatedAt represents the timestamp when the metric was last updated.
+	UpdatedAt time.Time `json:"updatedAt" db:"updated_at"`
 }
 
 func NewMetric(name string, mType string) (Metric, error) {
@@ -50,7 +62,7 @@ func (m *Metric) SetValue(value float64) {
 	m.Value.Valid = true
 }
 
-func (m *Metric) GetAdaptedByTypeValue() interface{} {
+func (m *Metric) GetValueByType() interface{} {
 	switch m.MType {
 	case string(Counter):
 		return m.Delta.Int64

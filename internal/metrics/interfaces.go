@@ -6,6 +6,7 @@ import (
 	"github.com/dkmelnik/metrics/internal/models"
 )
 
+// IRepository is an interface defining methods for interacting with a data repository.
 type IRepository interface {
 	SaveOrUpdate(ctx context.Context, metric models.Metric) error
 	SaveOrUpdateMany(ctx context.Context, metrics []models.Metric) error
@@ -13,6 +14,7 @@ type IRepository interface {
 	Find(ctx context.Context) ([]models.Metric, error)
 }
 
+// Signer is an interface representing an entity capable of verifying the equality of two byte slices.
 type Signer interface {
 	Equal(sign, data []byte) bool
 }

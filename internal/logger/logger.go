@@ -5,6 +5,7 @@ import (
 	"net/http"
 )
 
+// ILogger is an interface defining logging functionalities.
 type ILogger interface {
 	RequestLog(h http.Handler) http.Handler
 	Debug(msg string, args ...any)
@@ -14,6 +15,7 @@ type ILogger interface {
 	ErrorWithContext(ctx context.Context, err error)
 }
 
+// IConfig is an interface defining methods for retrieving configuration settings for init logger service.
 type IConfig interface {
 	GetLevel() string
 	GetMode() string

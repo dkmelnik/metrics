@@ -14,6 +14,16 @@ import (
 	"github.com/dkmelnik/metrics/internal/utils"
 )
 
+// MemoryStorage represents an in-memory storage for metrics.
+//
+// It provides concurrent access to a map of metrics, protected by a read-write mutex.
+// The storage can be optionally configured to save metrics to a file asynchronously.
+//
+// Fields:
+//   - mu: A read-write mutex for concurrent access to the metrics map.
+//   - metrics: A map storing metrics with their IDs as keys.
+//   - syncsSaving: A boolean indicating whether saving to file is synchronized.
+//   - filePath: The file path where metrics are saved if syncsSaving is enabled.
 type MemoryStorage struct {
 	mu          sync.RWMutex
 	metrics     map[string]models.Metric

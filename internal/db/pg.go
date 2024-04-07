@@ -7,6 +7,7 @@ import (
 	"github.com/dkmelnik/metrics/configs"
 )
 
+// NewPsqlConnection establishes a new PostgreSQL database connection using the provided server configuration.
 func NewPsqlConnection(c configs.Server) (*sqlx.DB, error) {
 	db, err := sqlx.Connect("postgres", c.DBConnectStr)
 	if err != nil {

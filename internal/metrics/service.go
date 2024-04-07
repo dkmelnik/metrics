@@ -67,15 +67,15 @@ func (s *Service) CreateOrUpdateMany(dtos []models.Metric) error {
 	return nil
 }
 
-func (s *Service) GetMetric(tp, nm string) (dto.Response, error) {
+func (s *Service) GetMetric(tp, nm string) (dto.Details, error) {
 	ctx := context.Background()
 
 	m, err := s.metricsRepo.FindOneByTypeAndName(ctx, tp, nm)
 	if err != nil {
-		return dto.Response{}, err
+		return dto.Details{}, err
 	}
-	var out dto.Response
-	out.AdaptModel(m)
+	var out dto.Details
+	out.FillFromModel(m)
 	return out, nil
 }
 
@@ -86,7 +86,7 @@ func (s *Service) GetMetricValue(tp, nm string) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	return m.GetAdaptedByTypeValue(), nil
+	return m.GetValueByType(), nil
 }
 
 func (s *Service) GetAllInHTML() (string, error) {
@@ -102,7 +102,7 @@ func (s *Service) GetAllInHTML() (string, error) {
 		html += "<li>"
 		html += "<strong>" + metric.Name + ": </strong>"
 		html += fmt.Sprintf("Guid: %v\t", metric.ID)
-		html += fmt.Sprintf("Value: %v", metric.GetAdaptedByTypeValue())
+		html += fmt.Sprintf("Value: %v", metric.GetValueByType())
 		html += "</li>"
 	}
 

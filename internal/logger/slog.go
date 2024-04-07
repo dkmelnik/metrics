@@ -45,6 +45,7 @@ type logger struct {
 
 var _ ILogger = (*logger)(nil)
 
+// Log represents a logging utility.
 var Log = logger{slog.New(slog.NewJSONHandler(io.Discard, nil))}
 
 func (l *logger) Debug(msg string, args ...any) {
