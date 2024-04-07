@@ -12,14 +12,17 @@ import (
 	"github.com/dkmelnik/metrics/internal/models"
 )
 
+// Service represents the business logic layer.
 type Service struct {
 	metricsRepo IRepository
 }
 
+// NewService creates a new instance of Service.
 func NewService(mr IRepository) *Service {
 	return &Service{mr}
 }
 
+// CreateOrUpdateByParams is a method of Service to handle creating or updating metrics by params.
 func (s *Service) CreateOrUpdateByParams(tp, nm, vl string) error {
 	metric := models.Metric{
 		Name:  nm,
@@ -45,6 +48,7 @@ func (s *Service) CreateOrUpdateByParams(tp, nm, vl string) error {
 	return s.CreateOrUpdate(metric)
 }
 
+// CreateOrUpdate is a method of Service to handle creating or updating metrics by dto models.Metric.
 func (s *Service) CreateOrUpdate(dto models.Metric) error {
 	ctx := context.Background()
 
@@ -58,6 +62,7 @@ func (s *Service) CreateOrUpdate(dto models.Metric) error {
 	return s.metricsRepo.SaveOrUpdate(ctx, dto)
 }
 
+// CreateOrUpdateMany is a method of Service to handle creating or updating slice of metrics.
 func (s *Service) CreateOrUpdateMany(dtos []models.Metric) error {
 	for _, dto := range dtos {
 		if err := s.CreateOrUpdate(dto); err != nil {
@@ -67,6 +72,7 @@ func (s *Service) CreateOrUpdateMany(dtos []models.Metric) error {
 	return nil
 }
 
+// GetMetric is a method of Service to handle getting metric details dto.Details.
 func (s *Service) GetMetric(tp, nm string) (dto.Details, error) {
 	ctx := context.Background()
 
@@ -79,6 +85,7 @@ func (s *Service) GetMetric(tp, nm string) (dto.Details, error) {
 	return out, nil
 }
 
+// GetMetricValue is a method of Service to handle getting metric value by type and name.
 func (s *Service) GetMetricValue(tp, nm string) (interface{}, error) {
 	ctx := context.Background()
 
@@ -89,6 +96,7 @@ func (s *Service) GetMetricValue(tp, nm string) (interface{}, error) {
 	return m.GetValueByType(), nil
 }
 
+// GetAllInHTML is a method of Service to handle getting metrics in html format.
 func (s *Service) GetAllInHTML() (string, error) {
 	ctx := context.Background()
 

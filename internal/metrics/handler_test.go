@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
@@ -555,4 +556,125 @@ func Test_GetAllMetrics(t *testing.T) {
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		assert.Equal(t, "text/html; charset=utf-8", resp.Header.Get("Content-Type"))
 	})
+}
+
+func ExampleHandler_CreateOrUpdateByParams() {
+	store, _ := storage.NewMemoryStorage("", 0, false) // Instantiate your storage.
+	service := NewService(store)                       // Instantiate your service.
+	handler := NewHandler(nil, service)                // Instantiate your handler.
+
+	// Create a new HTTP request with query params.
+	req := httptest.NewRequest("GET", "/metrics?type=cpu&name=usage&value=50", nil)
+	// Create a ResponseRecorder to record the response.
+	rr := httptest.NewRecorder()
+
+	// Call the handler function directly, passing in the ResponseRecorder and Request.
+	handler.CreateOrUpdateByParams(rr, req)
+
+	// Check the status code and response body to verify the result.
+	if status := rr.Code; status != http.StatusOK {
+		fmt.Printf("Example 1: Unexpected status code: %d\n", status)
+	}
+}
+
+func ExampleHandler_CreateOrUpdateByJSON() {
+	store, _ := storage.NewMemoryStorage("", 0, false) // Instantiate your storage.
+	service := NewService(store)                       // Instantiate your service.
+	handler := NewHandler(nil, service)                // Instantiate your handler.
+
+	// Example 1: Mocking a successful JSON request
+	// Define a sample JSON request body.
+	requestBody := `{"ID": "123", "MType": "cpu", "Delta": 10}`
+	// Create a new HTTP request with the defined JSON body.
+	req := httptest.NewRequest("POST", "/create", strings.NewReader(requestBody))
+	// Set the request Content-Type header to indicate JSON format.
+	req.Header.Set("Content-Type", "application/json")
+	// Create a ResponseRecorder to record the response.
+	rr := httptest.NewRecorder()
+	// Call the handler function directly, passing in the ResponseRecorder and Request.
+	handler.CreateOrUpdateByJSON(rr, req)
+	// Check the status code and response body to verify the result.
+	if status := rr.Code; status != http.StatusOK {
+		fmt.Printf("Example 1: Unexpected status code: %d\n", status)
+	}
+}
+
+func ExampleHandler_CreateOrUpdateMany() {
+	store, _ := storage.NewMemoryStorage("", 0, false) // Instantiate your storage.
+	service := NewService(store)                       // Instantiate your service.
+	handler := NewHandler(nil, service)                // Instantiate your handler.
+
+	// Example 1: Mocking a successful JSON request with multiple metrics
+	// Define a sample JSON request body with multiple metrics.
+	requestBody := `[{"ID": "123", "MType": "cpu", "Delta": 10}, {"ID": "456", "MType": "memory", "Value": 80}]`
+	// Create a new HTTP request with the defined JSON body.
+	req := httptest.NewRequest("POST", "/create-many", strings.NewReader(requestBody))
+	// Set the request Content-Type header to indicate JSON format.
+	req.Header.Set("Content-Type", "application/json")
+	// Create a ResponseRecorder to record the response.
+	rr := httptest.NewRecorder()
+	// Call the handler function directly, passing in the ResponseRecorder and Request.
+	handler.CreateOrUpdateMany(rr, req)
+	// Check the status code and response body to verify the result.
+	if status := rr.Code; status != http.StatusOK {
+		fmt.Printf("Example 1: Unexpected status code: %d\n", status)
+	}
+}
+
+func ExampleHandler_GetMetric() {
+	store, _ := storage.NewMemoryStorage("", 0, false) // Instantiate your storage.
+	service := NewService(store)                       // Instantiate your service.
+	handler := NewHandler(nil, service)                // Instantiate your handler.
+
+	// Example 1: Mocking a successful request to get a metric
+	// Define a sample JSON request body.
+	requestBody := `{"MType": "cpu", "ID": "123"}`
+	// Create a new HTTP request with the defined JSON body.
+	req := httptest.NewRequest("GET", "/metric", strings.NewReader(requestBody))
+	// Set the request Content-Type header to indicate JSON format.
+	req.Header.Set("Content-Type", "application/json")
+	// Create a ResponseRecorder to record the response.
+	rr := httptest.NewRecorder()
+	// Call the handler function directly, passing in the ResponseRecorder and Request.
+	handler.GetMetric(rr, req)
+	// Check the status code and response body to verify the result.
+	if status := rr.Code; status != http.StatusOK {
+		fmt.Printf("Example 1: Unexpected status code: %d\n", status)
+	}
+}
+
+func ExampleHandler_GetMetricValue() {
+	store, _ := storage.NewMemoryStorage("", 0, false) // Instantiate your storage.
+	service := NewService(store)                       // Instantiate your service.
+	handler := NewHandler(nil, service)                // Instantiate your handler.
+
+	// Example 1: Mocking a successful request to get a metric value
+	// Create a new HTTP request with desired URL parameters.
+	req := httptest.NewRequest("GET", "/metric?type=cpu&name=usage", nil)
+	// Create a ResponseRecorder to record the response.
+	rr := httptest.NewRecorder()
+	// Call the handler function directly, passing in the ResponseRecorder and Request.
+	handler.GetMetricValue(rr, req)
+	// Check the status code and response body to verify the result.
+	if status := rr.Code; status != http.StatusOK {
+		fmt.Printf("Example 1: Unexpected status code: %d\n", status)
+	}
+}
+
+func ExampleHandler_GetAllMetrics() {
+	store, _ := storage.NewMemoryStorage("", 0, false) // Instantiate your storage.
+	service := NewService(store)                       // Instantiate your service.
+	handler := NewHandler(nil, service)                // Instantiate your handler.
+
+	// Example 1: Mocking a successful request to get all metrics in HTML format
+	// Create a new HTTP request.
+	req := httptest.NewRequest("GET", "/metrics", nil)
+	// Create a ResponseRecorder to record the response.
+	rr := httptest.NewRecorder()
+	// Call the handler function directly, passing in the ResponseRecorder and Request.
+	handler.GetAllMetrics(rr, req)
+	// Check the status code and response body to verify the result.
+	if status := rr.Code; status != http.StatusOK {
+		fmt.Printf("Example 1: Unexpected status code: %d\n", status)
+	}
 }
