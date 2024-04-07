@@ -31,10 +31,10 @@ type Metric struct {
 	Delta sql.NullInt64 `json:"delta,omitempty" db:"delta"`
 	// Value represents the value of the metric in case of a "gauge" type.
 	Value sql.NullFloat64 `json:"value,omitempty" db:"value"`
-	// CreatedAt represents the timestamp when the metric was created.
-	CreatedAt time.Time `json:"createdAt" db:"created_at"`
-	// UpdatedAt represents the timestamp when the metric was last updated.
-	UpdatedAt time.Time `json:"updatedAt" db:"updated_at"`
+	// CreatedAT represents the timestamp when the metric was created.
+	CreatedAT time.Time `json:"createdAt" db:"created_at"`
+	// UpdatedAT represents the timestamp when the metric was last updated.
+	UpdatedAT time.Time `json:"updatedAt" db:"updated_at"`
 }
 
 func NewMetric(name string, mType string) (Metric, error) {
