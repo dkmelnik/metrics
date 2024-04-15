@@ -43,8 +43,7 @@ func NewMemoryStorage(storagePath string, storeInterval int, restore bool) (*Mem
 	}
 
 	if storeInterval > 0 {
-		savePeriod := time.NewTicker(time.Second * time.Duration(storeInterval))
-		go ms.intervalUpdatingToFile(savePeriod)
+		go ms.intervalUpdatingToFile(time.Duration(storeInterval))
 	}
 
 	return ms, nil
@@ -106,8 +105,11 @@ func (m *MemoryStorage) Find(ctx context.Context) ([]models.Metric, error) {
 	return existingData, nil
 }
 
-func (m *MemoryStorage) intervalUpdatingToFile(t *time.Ticker) {
-	for range t.C {
+func (m *MemoryStorage) intervalUpdatingToFile(t time.Duration) {
+	savePeriod := time.NewTicker(time.Second * t)
+	defer savePeriod.Stop()
+
+	for range savePeriod.C {
 		m.saveMetricsToFile()
 	}
 }
@@ -138,11 +140,7 @@ func (m *MemoryStorage) loadMetricsFromFile() {
 		logger.Log.ErrorWithContext(ctx, err)
 		return
 	}
-	for id, metric := range ms {
-		key := id
-		metric.ID = key
-		m.metrics[key] = metric
-	}
+	m.metrics = ms
 }
 
 func (m *MemoryStorage) saveMetricsToFile() {

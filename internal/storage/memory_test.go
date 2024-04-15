@@ -11,9 +11,7 @@ import (
 )
 
 func BenchmarkSaveOrUpdate(b *testing.B) {
-	storage := &MemoryStorage{
-		metrics: make(map[string]models.Metric),
-	}
+	storage, _ := NewMemoryStorage("", 0, false)
 
 	metric := models.Metric{
 		MType: "type",
@@ -27,9 +25,7 @@ func BenchmarkSaveOrUpdate(b *testing.B) {
 }
 
 func BenchmarkSaveOrUpdateMany(b *testing.B) {
-	storage := &MemoryStorage{
-		metrics: make(map[string]models.Metric),
-	}
+	storage, _ := NewMemoryStorage("", 0, false)
 
 	var metrics []models.Metric
 	for i := 0; i < 1000; i++ {
@@ -47,9 +43,7 @@ func BenchmarkSaveOrUpdateMany(b *testing.B) {
 }
 
 func BenchmarkFindOneByTypeAndName(b *testing.B) {
-	storage := &MemoryStorage{
-		metrics: make(map[string]models.Metric),
-	}
+	storage, _ := NewMemoryStorage("", 0, false)
 
 	for i := 0; i < 1000; i++ {
 		metric := models.Metric{
@@ -66,9 +60,7 @@ func BenchmarkFindOneByTypeAndName(b *testing.B) {
 }
 
 func BenchmarkFind(b *testing.B) {
-	storage := &MemoryStorage{
-		metrics: make(map[string]models.Metric),
-	}
+	storage, _ := NewMemoryStorage("", 0, false)
 
 	for i := 0; i < 1000; i++ {
 		metric := models.Metric{
@@ -118,10 +110,7 @@ func BenchmarkLoadMetricsFromFile(b *testing.B) {
 		b.Fatal("Error generating sample metrics file:", err)
 	}
 
-	storage := &MemoryStorage{
-		metrics:  make(map[string]models.Metric),
-		filePath: tmpFilePath,
-	}
+	storage, _ := NewMemoryStorage(tmpFilePath, 0, false)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -136,10 +125,7 @@ func BenchmarkSaveMetricsToFile(b *testing.B) {
 	defer os.Remove(tmpFilePath)
 
 	// Initialize MemoryStorage
-	storage := &MemoryStorage{
-		metrics:  make(map[string]models.Metric),
-		filePath: tmpFilePath,
-	}
+	storage, _ := NewMemoryStorage(tmpFilePath, 0, false)
 
 	// Populate storage with some sample metrics
 	for i := 0; i < 1000; i++ {
