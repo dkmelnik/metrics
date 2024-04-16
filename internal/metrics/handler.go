@@ -14,15 +14,18 @@ import (
 	"github.com/dkmelnik/metrics/internal/models"
 )
 
+// Handler is an HTTP handler for handling requests related to metrics.
 type Handler struct {
 	pgDB    *sqlx.DB
 	service *Service
 }
 
+// NewHandler creates a new instance of Handler.
 func NewHandler(pgDB *sqlx.DB, s *Service) *Handler {
 	return &Handler{pgDB, s}
 }
 
+// CreateOrUpdateByParams is an HTTP handler method to create or update metrics based on URL parameters.
 func (h *Handler) CreateOrUpdateByParams(rw http.ResponseWriter, r *http.Request) {
 	metricsType := chi.URLParam(r, "type")
 	metricsName := chi.URLParam(r, "name")
@@ -51,6 +54,7 @@ func (h *Handler) CreateOrUpdateByParams(rw http.ResponseWriter, r *http.Request
 	}
 }
 
+// CreateOrUpdateByJSON is an HTTP handler method to create or update metrics based on JSON request body.
 func (h *Handler) CreateOrUpdateByJSON(rw http.ResponseWriter, r *http.Request) {
 	var body dto.CreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -89,8 +93,8 @@ func (h *Handler) CreateOrUpdateByJSON(rw http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var out dto.Response
-	out.AdaptModel(model)
+	var out dto.Details
+	out.FillFromModel(model)
 
 	marshal, err := json.Marshal(out)
 	if err != nil {
@@ -106,6 +110,7 @@ func (h *Handler) CreateOrUpdateByJSON(rw http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// CreateOrUpdateMany is an HTTP handler method to create or update multiple metrics based on JSON request body.
 func (h *Handler) CreateOrUpdateMany(rw http.ResponseWriter, r *http.Request) {
 	var body []dto.CreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -151,9 +156,9 @@ func (h *Handler) CreateOrUpdateMany(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var out = make([]dto.Response, len(mds))
+	var out = make([]dto.Details, len(mds))
 	for idx, v := range mds {
-		out[idx].AdaptModel(v)
+		out[idx].FillFromModel(v)
 	}
 
 	marshal, err := json.Marshal(out)
@@ -170,6 +175,7 @@ func (h *Handler) CreateOrUpdateMany(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetMetric is an HTTP handler method to retrieve a metric based on JSON request body.
 func (h *Handler) GetMetric(rw http.ResponseWriter, r *http.Request) {
 	var body dto.GetRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -202,6 +208,7 @@ func (h *Handler) GetMetric(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetMetricValue is an HTTP handler method to retrieve the value of a metric based on URL parameters.
 func (h *Handler) GetMetricValue(rw http.ResponseWriter, r *http.Request) {
 	metricsType := chi.URLParam(r, "type")
 	metricsName := chi.URLParam(r, "name")
@@ -224,6 +231,7 @@ func (h *Handler) GetMetricValue(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetAllMetrics is an HTTP handler method to retrieve all metrics in HTML format.
 func (h *Handler) GetAllMetrics(rw http.ResponseWriter, r *http.Request) {
 	metrics, err := h.service.GetAllInHTML()
 	if err != nil {

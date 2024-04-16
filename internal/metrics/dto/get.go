@@ -1,30 +1,11 @@
 package dto
 
-import "github.com/dkmelnik/metrics/internal/models"
-
+// GetRequest represents a request for retrieving an entity.
+//
+// It contains fields for specifying the ID and type of the entity to be retrieved.
 type GetRequest struct {
-	ID    string `json:"id"`
+	// ID is the unique identifier of the metric.
+	ID string `json:"id"`
+	// MType indicates the type of the metric, which can be either "gauge" or "counter".
 	MType string `json:"type"`
-}
-
-type Response struct {
-	ID    string   `json:"id"`
-	MType string   `json:"type"`
-	Delta *int64   `json:"delta,omitempty"`
-	Value *float64 `json:"value,omitempty"`
-}
-
-func (r *Response) AdaptModel(m models.Metric) {
-	r.ID = m.Name
-	r.MType = m.MType
-	r.Delta = nil
-	r.Value = nil
-
-	if m.Delta.Valid {
-		r.Delta = &m.Delta.Int64
-	}
-
-	if m.Value.Valid {
-		r.Value = &m.Value.Float64
-	}
 }

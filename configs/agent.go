@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+// Agent stores properties that configure agent service.
+// Properties can be taken from environment variables or flags.
 type Agent struct {
 	Addr, Mode, Level, Key                  string
 	ReportInterval, PollInterval, RateLimit int

@@ -15,6 +15,12 @@ import (
 	"github.com/dkmelnik/metrics/internal/logger"
 )
 
+// Send periodically sends metrics to a server using the provided time ticker, metrics channel, server URL, and signer.
+//
+// The function continuously listens for incoming metrics from the provided channel and sends them to the specified server URL.
+// It utilizes the provided context to allow for cancellation of the sending routine.
+// Additionally, it expects a time.Ticker to determine the interval between metric sending attempts.
+// The signer is used for signing the data before sending it to the server.
 func Send(ctx context.Context, t *time.Ticker, ch <-chan *Metrics, serverURL string, signer Signer) {
 	for {
 		select {

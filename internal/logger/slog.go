@@ -3,14 +3,15 @@ package logger
 import (
 	"context"
 	"encoding/json"
-	"github.com/fatih/color"
-	"github.com/mdobak/go-xerrors"
 	"io"
 	"log"
 	"log/slog"
 	"net/http"
 	"path/filepath"
 	"time"
+
+	"github.com/fatih/color"
+	"github.com/mdobak/go-xerrors"
 )
 
 /*
@@ -44,6 +45,7 @@ type logger struct {
 
 var _ ILogger = (*logger)(nil)
 
+// Log represents a logging utility.
 var Log = logger{slog.New(slog.NewJSONHandler(io.Discard, nil))}
 
 func (l *logger) Debug(msg string, args ...any) {

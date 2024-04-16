@@ -2,14 +2,22 @@ package collect
 
 import (
 	"context"
-	"github.com/dkmelnik/metrics/internal/logger"
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/mem"
 	"math/rand"
 	"runtime"
 	"time"
+
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
+
+	"github.com/dkmelnik/metrics/internal/logger"
 )
 
+// MetricsGenerator generates system metrics periodically using the provided time ticker.
+// It accepts a context.Context to allow for cancellation of the metric generation routine
+// and a time.Ticker to determine the interval between metric generations.
+// It returns a channel of type *Metrics where the generated metrics will be sent.
+// The function continuously generates metrics until the context is canceled.
+// Metrics include memory usage, CPU utilization, and other system statistics.
 func MetricsGenerator(ctx context.Context, t *time.Ticker) chan *Metrics {
 	inputCh := make(chan *Metrics)
 	var m runtime.MemStats

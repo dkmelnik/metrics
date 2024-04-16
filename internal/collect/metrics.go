@@ -2,6 +2,11 @@ package collect
 
 import "reflect"
 
+// Metrics represents system metrics including memory usage, CPU utilization, and other statistics.
+//
+// Each field in the Metrics struct corresponds to a specific metric, with its data type and metric type indicated using struct tags.
+// Metric types can be "gauge" or "counter", indicating whether the metric represents a value that can go up and down (gauge) or only up (counter).
+// The struct tags are used for metric annotations.
 type Metrics struct {
 	Alloc           float64 `metric:"gauge"`
 	TotalAlloc      float64 `metric:"gauge"`

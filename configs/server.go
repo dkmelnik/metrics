@@ -6,6 +6,8 @@ import (
 	"strconv"
 )
 
+// Server stores properties that configure server service.
+// Properties can be taken from environment variables or flags.
 type Server struct {
 	Addr, DBConnectStr, Mode, Level, FileStoragePath, Key string
 	StoreInterval                                         int

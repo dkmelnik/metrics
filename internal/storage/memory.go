@@ -4,15 +4,26 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
+	"sync"
+	"time"
+
 	"github.com/dkmelnik/metrics/internal/apperrors"
 	"github.com/dkmelnik/metrics/internal/logger"
 	"github.com/dkmelnik/metrics/internal/models"
 	"github.com/dkmelnik/metrics/internal/utils"
-	"os"
-	"sync"
-	"time"
 )
 
+// MemoryStorage represents an in-memory storage for metrics.
+//
+// It provides concurrent access to a map of metrics, protected by a read-write mutex.
+// The storage can be optionally configured to save metrics to a file asynchronously.
+//
+// Fields:
+//   - mu: A read-write mutex for concurrent access to the metrics map.
+//   - metrics: A map storing metrics with their IDs as keys.
+//   - syncsSaving: A boolean indicating whether saving to file is synchronized.
+//   - filePath: The file path where metrics are saved if syncsSaving is enabled.
 type MemoryStorage struct {
 	mu          sync.RWMutex
 	metrics     map[string]models.Metric
@@ -32,8 +43,7 @@ func NewMemoryStorage(storagePath string, storeInterval int, restore bool) (*Mem
 	}
 
 	if storeInterval > 0 {
-		savePeriod := time.NewTicker(time.Second * time.Duration(storeInterval))
-		go ms.intervalUpdatingToFile(savePeriod)
+		go ms.intervalUpdatingToFile(time.Duration(storeInterval))
 	}
 
 	return ms, nil
@@ -95,8 +105,11 @@ func (m *MemoryStorage) Find(ctx context.Context) ([]models.Metric, error) {
 	return existingData, nil
 }
 
-func (m *MemoryStorage) intervalUpdatingToFile(t *time.Ticker) {
-	for range t.C {
+func (m *MemoryStorage) intervalUpdatingToFile(t time.Duration) {
+	savePeriod := time.NewTicker(time.Second * t)
+	defer savePeriod.Stop()
+
+	for range savePeriod.C {
 		m.saveMetricsToFile()
 	}
 }
@@ -127,11 +140,7 @@ func (m *MemoryStorage) loadMetricsFromFile() {
 		logger.Log.ErrorWithContext(ctx, err)
 		return
 	}
-	for id, metric := range ms {
-		key := id
-		metric.ID = key
-		m.metrics[key] = metric
-	}
+	m.metrics = ms
 }
 
 func (m *MemoryStorage) saveMetricsToFile() {

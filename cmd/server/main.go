@@ -3,15 +3,12 @@ package main
 import (
 	"database/sql"
 	"errors"
-	"github.com/dkmelnik/metrics/internal/sign"
-	"github.com/dkmelnik/metrics/internal/storage"
 	"os"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
-
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 
 	"github.com/dkmelnik/metrics/configs"
@@ -19,6 +16,8 @@ import (
 	"github.com/dkmelnik/metrics/internal/logger"
 	"github.com/dkmelnik/metrics/internal/metrics"
 	"github.com/dkmelnik/metrics/internal/server"
+	"github.com/dkmelnik/metrics/internal/sign"
+	"github.com/dkmelnik/metrics/internal/storage"
 )
 
 func main() {
@@ -65,7 +64,7 @@ func run() error {
 		}
 	}
 
-	var store metrics.Repository
+	var store metrics.IRepository
 	if connPG != nil {
 		store, _ = storage.NewRepositoryStorage(connPG)
 	} else if connSQLITE != nil {

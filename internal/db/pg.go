@@ -1,11 +1,13 @@
 package db
 
 import (
-	"github.com/dkmelnik/metrics/configs"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+
+	"github.com/dkmelnik/metrics/configs"
 )
 
+// NewPsqlConnection establishes a new PostgreSQL database connection using the provided server configuration.
 func NewPsqlConnection(c configs.Server) (*sqlx.DB, error) {
 	db, err := sqlx.Connect("postgres", c.DBConnectStr)
 	if err != nil {

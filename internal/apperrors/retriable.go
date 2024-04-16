@@ -13,12 +13,15 @@ import (
 	"github.com/dkmelnik/metrics/internal/logger"
 )
 
+// Stores parameters for calculating the delay between repetitions.
 const (
 	maxRetries        = 3
 	initialRetryDelay = time.Second
 	maxRetryDelay     = 5 * time.Second
 )
 
+// IsRetriableError checks if the provided error is retriable and returns a boolean indicating whether it is retriable,
+// along with the duration after which the operation can be retried.
 func IsRetriableError(err error) (bool, time.Duration) {
 	switch {
 	case isPostgreSQLError(err):
