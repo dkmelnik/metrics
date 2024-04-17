@@ -28,7 +28,7 @@
 // Place the analyzer in the cmd/staticlint directory of your project.
 // Add documentation in the godoc format, describing in detail the multichecker execution mechanism,
 // as well as each analyzer and its purpose.
-package staticlint
+package main
 
 import (
 	"go/ast"
@@ -54,46 +54,46 @@ import (
 var exitInMainAnalyzer = &analysis.Analyzer{
 	Name: "exitinmain",
 	Doc:  "reports direct os.Exit calls in main functions",
-	Run:  runExitInMainAnalyzer,
+	Run:  run,
 }
 
-func runExitInMainAnalyzer(pass *analysis.Pass) (interface{}, error) {
-	for _, file := range pass.Files {
-
-		for _, decl := range file.Decls {
-			fn, ok := decl.(*ast.FuncDecl)
-			if !ok {
-				continue
-			}
-
-			if fn.Name.Name != "main" {
-				continue
-			}
-
-			ast.Inspect(fn.Body, func(n ast.Node) bool {
-				callExpr, ok := n.(*ast.CallExpr)
-				if !ok {
-					return true
-				}
-
-				selExpr, ok := callExpr.Fun.(*ast.SelectorExpr)
-				if !ok {
-					return true
-				}
-
-				ident, ok := selExpr.X.(*ast.Ident)
-				if !ok || ident.Name != "os" || selExpr.Sel.Name != "Exit" {
-					return true
-				}
-				pass.Reportf(callExpr.Pos(), "direct use of os.Exit in main function")
-				return true
-			})
+func run(pass *analysis.Pass) (interface{}, error) {
+	if pass.Pkg.Name() != "main" {
+		return nil, nil
+	}
+	for _, pkg := range pass.Pkg.Imports() {
+		if pkg.Name() == "testing" {
+			return nil, nil
 		}
 	}
+	for _, file := range pass.Files {
+		if file.Name.Name != "main" {
+			return nil, nil
+		}
+		ast.Inspect(file, func(n ast.Node) bool {
+			if fd, ok := n.(*ast.FuncDecl); ok && fd.Name.Name != "main" {
+				return false
+			}
 
+			callExpr, ok := n.(*ast.CallExpr)
+			if !ok {
+				return true
+			}
+
+			fun, ok := callExpr.Fun.(*ast.SelectorExpr)
+			if !ok {
+				return true
+			}
+
+			if ident, ok := fun.X.(*ast.Ident); ok && ident.Name == "os" && fun.Sel.Name == "Exit" {
+				pass.Reportf(callExpr.Pos(), "calling os.Exit")
+			}
+
+			return true
+		})
+	}
 	return nil, nil
 }
-
 func main() {
 	checks := []*analysis.Analyzer{
 		assign.Analyzer,
