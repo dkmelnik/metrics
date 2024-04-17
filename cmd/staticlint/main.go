@@ -33,6 +33,7 @@ package main
 import (
 	"go/ast"
 
+	"github.com/timakin/bodyclose/passes/bodyclose"
 	"golang.org/x/tools/go/analysis/multichecker"
 	"golang.org/x/tools/go/analysis/passes/assign"
 	"golang.org/x/tools/go/analysis/passes/copylock"
@@ -43,6 +44,7 @@ import (
 	"golang.org/x/tools/go/analysis/passes/tests"
 	"golang.org/x/tools/go/analysis/passes/unreachable"
 	"golang.org/x/tools/go/analysis/passes/unsafeptr"
+	"honnef.co/go/tools/stylecheck"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/shift"
@@ -96,6 +98,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 }
 func main() {
 	checks := []*analysis.Analyzer{
+		bodyclose.Analyzer,
 		assign.Analyzer,
 		copylock.Analyzer,
 		httpresponse.Analyzer,
@@ -112,6 +115,12 @@ func main() {
 
 	for _, value := range staticcheck.Analyzers {
 		checks = append(checks, value.Analyzer)
+	}
+
+	for _, v := range stylecheck.Analyzers {
+		if v.Analyzer.Name == "ST1001" {
+			checks = append(checks, v.Analyzer)
+		}
 	}
 
 	multichecker.Main(checks...)
