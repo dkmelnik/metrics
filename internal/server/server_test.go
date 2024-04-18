@@ -1,6 +1,8 @@
 package server
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"testing"
 	"time"
@@ -16,7 +18,7 @@ func TestServer_Run(t *testing.T) {
 
 	go func() {
 		err := server.Run()
-		if err != nil && err != http.ErrServerClosed {
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			t.Errorf("server.Run() returned an unexpected error: %v", err)
 		}
 	}()
@@ -42,7 +44,7 @@ func TestServer_Run(t *testing.T) {
 	}
 
 	// Останавливаем сервер
-	if err := server.app.Shutdown(nil); err != nil {
+	if err := server.app.Shutdown(context.TODO()); err != nil {
 		t.Errorf("failed to shutdown server: %v", err)
 	}
 }
