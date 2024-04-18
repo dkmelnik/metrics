@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"log"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
@@ -38,7 +39,7 @@ func Test_Send(t *testing.T) {
 			http.Error(w, "Error decoding request body", http.StatusBadRequest)
 			return
 		}
-
+		log.Printf("%s", data.ID)
 		metricsNames = append(metricsNames, data.ID)
 		w.WriteHeader(http.StatusOK)
 	}))

@@ -11,6 +11,12 @@ import (
 	"github.com/dkmelnik/metrics/internal/sign"
 )
 
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 func main() {
 	if err := run(); err != nil {
 		panic(err)
@@ -47,7 +53,13 @@ func run() error {
 
 	go collect.Send(ctx, sendPeriod, metricsChan, c.Addr, signer)
 
-	logger.Log.Info("AGENT RUNNING", "ReportInterval", c.ReportInterval, "PollInterval", c.PollInterval)
+	logger.Log.Info("AGENT RUNNING",
+		"ReportInterval", c.ReportInterval,
+		"PollInterval", c.PollInterval,
+		"buildVersion", buildVersion,
+		"buildDate", buildDate,
+		"buildCommit", buildCommit,
+	)
 
 	done := make(chan struct{})
 	<-done
