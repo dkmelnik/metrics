@@ -20,6 +20,12 @@ import (
 	"github.com/dkmelnik/metrics/internal/storage"
 )
 
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 func main() {
 	if err := run(); err != nil {
 		logger.Log.Error("Error starting app", "error", err)
@@ -80,7 +86,13 @@ func run() error {
 
 	s := server.NewServer(c.Addr, r)
 
-	logger.Log.Info("SERVER LISTEN AND SERVE", "addr", c.Addr, "DBConnected", connPG != nil)
+	logger.Log.Info("SERVER LISTEN AND SERVE",
+		"addr", c.Addr,
+		"DBConnected", connPG != nil,
+		"buildVersion", buildVersion,
+		"buildDate", buildDate,
+		"buildCommit", buildCommit,
+	)
 	if err = s.Run(); err != nil {
 		return err
 	}
