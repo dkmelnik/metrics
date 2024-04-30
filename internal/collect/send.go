@@ -57,9 +57,7 @@ func NewMetricsCollector(
 		limit:     limit,
 	}
 
-	if err := mc.loadPublicKey(publicKeyPath); err != nil {
-		return nil, err
-	}
+	mc.loadPublicKey(publicKeyPath)
 
 	return mc, nil
 }
@@ -101,9 +99,11 @@ func (mc *MetricsCollector) sendMetrics() {
 			continue
 		}
 
-		body, err = mc.encrypt(body)
-		if err != nil {
-			continue
+		if mc.publicKey != nil {
+			body, err = mc.encrypt(body)
+			if err != nil {
+				continue
+			}
 		}
 
 		var hash string

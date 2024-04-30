@@ -9,6 +9,11 @@ import (
 
 func (m *MiddlewareManager) Decryption(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if m.privateKey == nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

@@ -17,9 +17,8 @@ type MiddlewareManager struct {
 func NewMiddlewareManager(privateKeyPath string, signer Signer) (*MiddlewareManager, error) {
 	mm := &MiddlewareManager{sign: signer}
 
-	if err := mm.loadPrivateKey(privateKeyPath); err != nil {
-		return nil, err
-	}
+	mm.loadPrivateKey(privateKeyPath)
+
 	return mm, nil
 }
 

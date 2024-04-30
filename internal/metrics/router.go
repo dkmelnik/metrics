@@ -4,13 +4,12 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
 
-	"github.com/dkmelnik/metrics/configs"
 	"github.com/dkmelnik/metrics/internal/logger"
 	"github.com/dkmelnik/metrics/internal/middlewares"
 )
 
 func ConfigureRouter(
-	serverConfig configs.Server,
+	privateKeyPath string,
 	pgDB *sqlx.DB,
 	storage IRepository,
 	signer middlewares.Signer,
@@ -20,7 +19,7 @@ func ConfigureRouter(
 	r.Use(logger.Log.RequestLog)
 
 	// infrastructure
-	m, err := middlewares.NewMiddlewareManager(serverConfig.PrivateKeyPath, signer)
+	m, err := middlewares.NewMiddlewareManager(privateKeyPath, signer)
 	if err != nil {
 		return nil, err
 	}
