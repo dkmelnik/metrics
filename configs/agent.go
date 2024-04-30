@@ -10,7 +10,7 @@ import (
 // Agent stores properties that configure agent service.
 // Properties can be taken from environment variables or flags.
 type Agent struct {
-	Addr, Mode, Level, Key                  string
+	Addr, Mode, Level, Key, PublicKeyPath   string
 	ReportInterval, PollInterval, RateLimit int
 }
 
@@ -24,6 +24,7 @@ func NewAgent() Agent {
 	flag.StringVar(&cb.Level, "la", "info", "logging level. If empty, warn is used")
 	flag.StringVar(&cb.Key, "k", "", "signature key")
 	flag.IntVar(&cb.RateLimit, "l", 5, "req rate limit. If empty, 5 is used")
+	flag.StringVar(&cb.PublicKeyPath, "crypto-key", "", "public key address for asymmetric encryption")
 	flag.Parse()
 
 	k, ok := os.LookupEnv("KEY")
@@ -71,6 +72,10 @@ func NewAgent() Agent {
 	}
 	if !strings.HasPrefix(cb.Addr, "http://") && !strings.HasPrefix(cb.Addr, "https://") {
 		cb.Addr = "http://" + cb.Addr
+	}
+	ck, ok := os.LookupEnv("CRYPTO_KEY")
+	if ok {
+		cb.PublicKeyPath = ck
 	}
 	return cb
 }

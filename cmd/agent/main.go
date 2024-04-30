@@ -19,6 +19,7 @@ var (
 
 func main() {
 	if err := run(); err != nil {
+		logger.Log.Error("Error starting app", "error", err)
 		panic(err)
 	}
 }
@@ -51,7 +52,11 @@ func run() error {
 		signer = sign.NewSign(c.Key)
 	}
 
-	go collect.Send(ctx, sendPeriod, metricsChan, c.Addr, signer)
+	cl, err := collect.NewMetricsCollector(ctx, sendPeriod, c.PublicKeyPath, metricsChan, c.Addr, signer, 5)
+	if err != nil {
+		return err
+	}
+	cl.SendMetricsPeriodically()
 
 	logger.Log.Info("AGENT RUNNING",
 		"ReportInterval", c.ReportInterval,

@@ -79,7 +79,7 @@ func run() error {
 
 	signer := sign.NewSign(c.Key)
 
-	r, err := metrics.ConfigureRouter(connPG, store, signer)
+	r, err := metrics.ConfigureRouter(c, connPG, store, signer)
 	if err != nil {
 		return err
 	}

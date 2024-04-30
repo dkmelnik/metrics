@@ -4,20 +4,26 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
 
+	"github.com/dkmelnik/metrics/configs"
+	"github.com/dkmelnik/metrics/internal/logger"
 	"github.com/dkmelnik/metrics/internal/middlewares"
 )
 
 func ConfigureRouter(
+	serverConfig configs.Server,
 	pgDB *sqlx.DB,
 	storage IRepository,
 	signer middlewares.Signer,
 ) (*chi.Mux, error) {
 	r := chi.NewRouter()
 
-	//r.Use(logger.Log.RequestLog)
+	r.Use(logger.Log.RequestLog)
 
 	// infrastructure
-	m := middlewares.NewMiddlewareManager(signer)
+	m, err := middlewares.NewMiddlewareManager(serverConfig.PrivateKeyPath, signer)
+	if err != nil {
+		return nil, err
+	}
 	r.Use(m.Recovery)
 
 	//metrics
@@ -28,6 +34,7 @@ func ConfigureRouter(
 
 	r.Route("/update/", func(r chi.Router) {
 		r.Use(m.Sign)
+		r.Use(m.Decryption)
 		r.Use(m.Compress)
 		r.Post("/", metricsHandler.CreateOrUpdateByJSON)
 	})

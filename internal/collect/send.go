@@ -4,9 +4,15 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
+	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"reflect"
 	"time"
 
@@ -15,24 +21,67 @@ import (
 	"github.com/dkmelnik/metrics/internal/logger"
 )
 
-// Send periodically sends metrics to a server using the provided time ticker, metrics channel, server URL, and signer.
-//
-// The function continuously listens for incoming metrics from the provided channel and sends them to the specified server URL.
-// It utilizes the provided context to allow for cancellation of the sending routine.
-// Additionally, it expects a time.Ticker to determine the interval between metric sending attempts.
-// The signer is used for signing the data before sending it to the server.
-func Send(ctx context.Context, t *time.Ticker, ch <-chan *Metrics, serverURL string, signer Signer) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-t.C:
-			loopMetricsAndSend(<-ch, serverURL, signer)
-		}
-	}
+// MetricsCollector представляет собой коллектор метрик.
+type MetricsCollector struct {
+	ctx       context.Context
+	period    *time.Ticker
+	payloadCh <-chan *Metrics
+	publicKey *rsa.PublicKey
+	serverURL string
+	signer    Signer
+	limit     int
 }
 
-func loopMetricsAndSend(md *Metrics, serverURL string, signer Signer) {
+type workPayload struct {
+	url  string
+	body []byte
+	hash string
+}
+
+func NewMetricsCollector(
+	ctx context.Context,
+	period *time.Ticker,
+	publicKeyPath string,
+	payloadCh <-chan *Metrics,
+	serverURL string,
+	signer Signer,
+	limit int,
+) (*MetricsCollector, error) {
+
+	mc := &MetricsCollector{
+		ctx:       ctx,
+		period:    period,
+		payloadCh: payloadCh,
+		serverURL: serverURL,
+		signer:    signer,
+		limit:     limit,
+	}
+
+	if err := mc.loadPublicKey(publicKeyPath); err != nil {
+		return nil, err
+	}
+
+	return mc, nil
+}
+
+// SendMetricsPeriodically периодически отправляет метрики на сервер.
+func (mc *MetricsCollector) SendMetricsPeriodically() {
+	go func() {
+
+		for {
+			select {
+			case <-mc.ctx.Done():
+				return
+			case <-mc.period.C:
+				mc.sendMetrics()
+			}
+		}
+	}()
+}
+
+func (mc *MetricsCollector) sendMetrics() {
+
+	md := <-mc.payloadCh
 	metricType := reflect.TypeOf(*md)
 	metricValue := reflect.ValueOf(*md)
 
@@ -46,25 +95,114 @@ func loopMetricsAndSend(md *Metrics, serverURL string, signer Signer) {
 		if tag == "" {
 			continue
 		}
+
 		body, err := buildCompressRequestBody(tag, field.Name, value.Interface())
 		if err != nil {
-			logger.Log.ErrorWithContext(context.Background(), err)
 			continue
 		}
-		var hash string
-		if signer != nil {
-			hash = signer.HashData(body)
+
+		body, err = mc.encrypt(body)
+		if err != nil {
+			continue
 		}
-		workPayloads = append(workPayloads, workPayload{url: serverURL, body: body, hash: hash})
+
+		var hash string
+		if mc.signer != nil {
+			hash = mc.signer.HashData(body)
+		}
+
+		workPayloads = append(workPayloads, workPayload{url: mc.serverURL, body: body, hash: hash})
 	}
 
-	limit := 5
+	mc.processWorkPayloads(workPayloads)
+}
 
-	jobs := generator(workPayloads, limit)
+func (mc *MetricsCollector) processWorkPayloads(payloads []workPayload) {
+	jobs := mc.generator(payloads)
 
-	for w := 0; w <= limit; w++ {
-		go worker(jobs)
+	for w := 0; w < mc.limit; w++ {
+		go mc.worker(jobs)
 	}
+}
+
+func (mc *MetricsCollector) generator(input []workPayload) chan workPayload {
+	out := make(chan workPayload, mc.limit)
+	go func() {
+		defer close(out)
+		for _, n := range input {
+			out <- n
+		}
+	}()
+	return out
+}
+
+func (mc *MetricsCollector) worker(jobs <-chan workPayload) {
+	for j := range jobs {
+		mc.sendMetricRequest(j.url, j.body, j.hash)
+	}
+}
+
+func (mc *MetricsCollector) sendMetricRequest(url string, body []byte, hash string) {
+	client := resty.New()
+
+	header := map[string]string{
+		"Content-Type":     "application/json",
+		"Content-Encoding": "gzip",
+	}
+
+	if hash != "" {
+		header["HashSHA256"] = hash
+	}
+
+	resp, err := client.R().
+		SetHeaders(header).
+		SetBody(body).
+		Post(fmt.Sprintf("%s/update/", url))
+
+	if err != nil {
+		logger.Log.Error("sendMetricRequest", "err", err.Error(), "body", string(body))
+		return
+	}
+
+	if resp.StatusCode() != http.StatusOK {
+		logger.Log.Error(
+			"sendMetricRequest",
+			"err", "status not ok",
+			"body", string(body),
+			"resp", string(resp.Body()),
+			"code", resp.StatusCode(),
+		)
+	}
+}
+
+func (mc *MetricsCollector) loadPublicKey(path string) error {
+	keyFile, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to read public key file: %v", err)
+	}
+
+	block, _ := pem.Decode(keyFile)
+	if block == nil {
+		return errors.New("failed to decode PEM block containing public key")
+	}
+
+	pub, err := x509.ParsePKCS1PublicKey(block.Bytes)
+	if err != nil {
+		return fmt.Errorf("failed to parse public key: %v", err)
+	}
+
+	mc.publicKey = pub
+
+	return nil
+}
+
+func (mc *MetricsCollector) encrypt(data []byte) ([]byte, error) {
+	encryptedData, err := rsa.EncryptPKCS1v15(rand.Reader, mc.publicKey, data)
+	if err != nil {
+		return nil, err
+	}
+
+	return encryptedData, nil
 }
 
 func buildCompressRequestBody(mt string, mn string, vl interface{}) ([]byte, error) {
@@ -100,60 +238,4 @@ func buildCompressRequestBody(mt string, mn string, vl interface{}) ([]byte, err
 		return nil, fmt.Errorf("failed compress data: %v", err)
 	}
 	return b.Bytes(), nil
-}
-
-func sendMetricRequest(url string, body []byte, hash string) {
-	client := resty.New()
-
-	header := map[string]string{
-		"Content-Type":     "application/json",
-		"Content-Encoding": "gzip",
-	}
-
-	if hash != "" {
-		header["HashSHA256"] = hash
-	}
-
-	resp, err := client.R().
-		SetHeaders(header).
-		SetBody(body).
-		Post(fmt.Sprintf("%s/update/", url))
-
-	if err != nil {
-		logger.Log.Error("sendMetricRequest", "err", err.Error(), "body", string(body))
-		return
-	}
-
-	if resp.StatusCode() != http.StatusOK {
-		logger.Log.Error(
-			"sendMetricRequest",
-			"err", "status not ok",
-			"body", string(body),
-			"resp", string(resp.Body()),
-			"code", resp.StatusCode(),
-		)
-	}
-}
-
-func generator(input []workPayload, limit int) chan workPayload {
-	out := make(chan workPayload, limit)
-	go func() {
-		defer close(out)
-		for _, n := range input {
-			out <- n
-		}
-	}()
-	return out
-}
-
-type workPayload struct {
-	url  string
-	body []byte
-	hash string
-}
-
-func worker(jobs <-chan workPayload) {
-	for j := range jobs {
-		sendMetricRequest(j.url, j.body, j.hash)
-	}
 }
