@@ -134,3 +134,13 @@ func setEnvInt(value *int, envName string) {
 		}
 	}
 }
+
+// GetLevel returns the logging level of the server.
+func (c Agent) GetLevel() string {
+	return c.Level
+}
+
+// GetMode returns the operating mode of the server.
+func (c Agent) GetMode() string {
+	return c.Mode
+}
