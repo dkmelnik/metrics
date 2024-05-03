@@ -7,6 +7,8 @@ import (
 	"os"
 )
 
+// Server stores properties that configure the server.
+// Properties can be taken from environment variables or flags.
 type Server struct {
 	Addr            string `json:"addr"`
 	DBConnectStr    string `json:"db_connect_str"`
@@ -17,9 +19,10 @@ type Server struct {
 	Restore         bool   `json:"restore"`
 	PrivateKeyPath  string `json:"private_key_path"`
 	Key             string `json:"key"`
-	configPath      string
+	configPath      string // Path to configuration file
 }
 
+// NewServer initializes a new Server with default values and parses flags, environment variables, and a configuration file.
 func NewServer() Server {
 	c := Server{}
 
@@ -28,6 +31,7 @@ func NewServer() Server {
 		setFileValues()
 }
 
+// setFlagValues sets configuration values from command line flags.
 func (c Server) setFlagValues() Server {
 	flag.StringVar(&c.configPath, "c", c.configPath, "path to configuration file")
 	flag.StringVar(&c.Addr, "a", "0.0.0.0:8080", "address in the form host:port. If empty, 0.0.0.0:8080 is used")
@@ -44,6 +48,7 @@ func (c Server) setFlagValues() Server {
 	return c
 }
 
+// setEnvValues sets configuration values from environment variables.
 func (c Server) setEnvValues() Server {
 	if envAddr := os.Getenv("ADDRESS"); envAddr != "" {
 		c.Addr = envAddr
@@ -76,6 +81,7 @@ func (c Server) setEnvValues() Server {
 	return c
 }
 
+// setFileValues sets configuration values from a JSON file.
 func (c Server) setFileValues() Server {
 	configPath := c.configPath
 
@@ -138,10 +144,12 @@ func (c Server) setFileValues() Server {
 	return c
 }
 
+// GetLevel returns the logging level of the server.
 func (c Server) GetLevel() string {
 	return c.Level
 }
 
+// GetMode returns the operating mode of the server.
 func (c Server) GetMode() string {
 	return c.Mode
 }
