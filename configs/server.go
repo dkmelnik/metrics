@@ -129,7 +129,7 @@ func (c Server) setFileValues() Server {
 		c.StoreInterval = config.StoreInterval
 	}
 
-	if c.Restore == false {
+	if !c.Restore {
 		c.Restore = config.Restore
 	}
 
