@@ -1,85 +1,141 @@
 package configs
 
 import (
+	"encoding/json"
 	"flag"
+	"fmt"
 	"os"
-	"strconv"
 )
 
-// Server stores properties that configure server service.
-// Properties can be taken from environment variables or flags.
 type Server struct {
-	Addr, DBConnectStr, Mode, Level, FileStoragePath, PrivateKeyPath, Key string
-	StoreInterval                                                         int
-	Restore                                                               bool
+	Addr            string `json:"addr"`
+	DBConnectStr    string `json:"db_connect_str"`
+	Mode            string `json:"mode"`
+	Level           string `json:"level"`
+	FileStoragePath string `json:"file_storage_path"`
+	StoreInterval   int    `json:"store_interval"`
+	Restore         bool   `json:"restore"`
+	PrivateKeyPath  string `json:"private_key_path"`
+	Key             string `json:"key"`
+	configPath      string
 }
 
 func NewServer() Server {
-	cb := Server{}
+	c := Server{}
 
-	flag.StringVar(&cb.Addr, "a", "0.0.0.0:8080", "in the form host:port. If empty, 0.0.0.0:8080 is used")
-	flag.StringVar(&cb.DBConnectStr, "d", "", "string for db connect")
-	flag.StringVar(&cb.Mode, "m", "production", "app mode. If empty, production is used")
-	flag.StringVar(&cb.Level, "l", "info", "logging level. If empty, warn is used")
-	flag.StringVar(&cb.FileStoragePath, "f", "/tmp/metrics-db.json", "full name of the file where the current values are saved. If empty, /tmp/metrics-db.json is used")
-	flag.IntVar(&cb.StoreInterval, "i", 300, "server saved metrics to disk. If empty, 300 is used")
-	flag.BoolVar(&cb.Restore, "r", true, "load or not previously saved values. If empty, true is used")
-	flag.StringVar(&cb.PrivateKeyPath, "crypto-key", "", "private key address for asymmetric encryption")
-	flag.StringVar(&cb.Key, "k", "", "signature key")
+	return c.setFlagValues().
+		setEnvValues().
+		setFileValues()
+}
+
+func (c Server) setFlagValues() Server {
+	flag.StringVar(&c.configPath, "c", c.configPath, "path to configuration file")
+	flag.StringVar(&c.Addr, "a", "0.0.0.0:8080", "address in the form host:port. If empty, 0.0.0.0:8080 is used")
+	flag.StringVar(&c.DBConnectStr, "d", c.DBConnectStr, "Database Connection String")
+	flag.StringVar(&c.Mode, "m", "production", "app mode. If empty, production is used")
+	flag.StringVar(&c.Level, "l", "info", "logging level. If empty, warn is used")
+	flag.StringVar(&c.FileStoragePath, "f", "/tmp/metrics-db.json", "full name of the file where the current values are saved. If empty, /tmp/metrics-db.json is used")
+	flag.IntVar(&c.StoreInterval, "i", 300, "server saved metrics to disk. If empty, 300 is used")
+	flag.BoolVar(&c.Restore, "r", true, "load or not previously saved values. If empty, true is used")
+	flag.StringVar(&c.PrivateKeyPath, "crypto-key", "", "private key address for asymmetric encryption")
+	flag.StringVar(&c.Key, "k", "", "signature key")
 	flag.Parse()
 
-	k, ok := os.LookupEnv("KEY")
-	if ok {
-		cb.Key = k
+	return c
+}
+
+func (c Server) setEnvValues() Server {
+	if envAddr := os.Getenv("ADDRESS"); envAddr != "" {
+		c.Addr = envAddr
+	}
+	if envDBConnectStr := os.Getenv("DATABASE_DSN"); envDBConnectStr != "" {
+		c.DBConnectStr = envDBConnectStr
+	}
+	if envMode := os.Getenv("APP_MODE"); envMode != "" {
+		c.Mode = envMode
+	}
+	if envLevel := os.Getenv("LOG_LEVEL"); envLevel != "" {
+		c.Level = envLevel
+	}
+	if envFileStoragePath := os.Getenv("FILE_STORAGE_PATH"); envFileStoragePath != "" {
+		c.FileStoragePath = envFileStoragePath
+	}
+	if envStoreInterval := os.Getenv("STORE_INTERVAL"); envStoreInterval != "" {
+		fmt.Sscanf(envStoreInterval, "%d", &c.StoreInterval)
+	}
+	if envRestore := os.Getenv("RESTORE"); envRestore != "" {
+		c.Restore = envRestore == "true"
+	}
+	if envPrivateKeyPath := os.Getenv("CRYPTO_KEY"); envPrivateKeyPath != "" {
+		c.PrivateKeyPath = envPrivateKeyPath
+	}
+	if envKey := os.Getenv("KEY"); envKey != "" {
+		c.Key = envKey
 	}
 
-	f, ok := os.LookupEnv("FILE_STORAGE_PATH")
-	if ok {
-		cb.FileStoragePath = f
+	return c
+}
+
+func (c Server) setFileValues() Server {
+	configPath := c.configPath
+
+	envConfigFile := os.Getenv("CONFIG")
+	if envConfigFile != "" {
+		configPath = envConfigFile
 	}
 
-	r, ok := os.LookupEnv("RESTORE")
-	if ok {
-		toBool, err := strconv.ParseBool(r)
-		if err == nil {
-			cb.Restore = toBool
-		}
+	config := Server{}
+
+	if configPath == "" {
+		return c
 	}
 
-	i, ok := os.LookupEnv("STORE_INTERVAL")
-	if ok {
-		toInt, err := strconv.Atoi(i)
-		if err == nil {
-			cb.StoreInterval = toInt
-		}
+	file, err := os.ReadFile(configPath)
+	if err != nil {
+		return c
 	}
 
-	l, ok := os.LookupEnv("LOG_LEVEL")
-	if ok {
-		cb.Level = l
+	if err = json.Unmarshal(file, &config); err != nil {
+		return c
 	}
 
-	s, ok := os.LookupEnv("APP_MODE")
-	if ok {
-		cb.Mode = s
+	if c.Addr == "" {
+		c.Addr = config.Addr
 	}
 
-	sa, ok := os.LookupEnv("ADDRESS")
-	if ok {
-		cb.Addr = sa
+	if c.DBConnectStr == "" {
+		c.DBConnectStr = config.DBConnectStr
 	}
 
-	db, ok := os.LookupEnv("DATABASE_DSN")
-	if ok {
-		cb.DBConnectStr = db
+	if c.Mode == "" {
+		c.Mode = config.Mode
 	}
 
-	ck, ok := os.LookupEnv("CRYPTO_KEY")
-	if ok {
-		cb.PrivateKeyPath = ck
+	if c.Level == "" {
+		c.Level = config.Level
 	}
 
-	return cb
+	if c.FileStoragePath == "" {
+		c.FileStoragePath = config.FileStoragePath
+	}
+
+	if c.StoreInterval == 0 {
+		c.StoreInterval = config.StoreInterval
+	}
+
+	if c.Restore == false {
+		c.Restore = config.Restore
+	}
+
+	if c.PrivateKeyPath == "" {
+		c.PrivateKeyPath = config.PrivateKeyPath
+	}
+
+	if c.Key == "" {
+		c.Key = config.Key
+	}
+
+	return c
 }
 
 func (c Server) GetLevel() string {
