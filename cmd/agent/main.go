@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/dkmelnik/metrics/configs"
@@ -35,7 +37,10 @@ func run() error {
 		return err
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	defer stop()
+
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	collectPeriod := time.NewTicker(time.Second * time.Duration(c.PollInterval))
@@ -66,8 +71,7 @@ func run() error {
 		"buildCommit", buildCommit,
 	)
 
-	done := make(chan struct{})
-	<-done
+	<-ctx.Done()
 
 	return nil
 }
