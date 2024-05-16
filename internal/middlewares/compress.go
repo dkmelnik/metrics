@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/dkmelnik/metrics/internal/logger"
 )
 
 func (m *MiddlewareManager) Compress(next http.Handler) http.Handler {
@@ -12,6 +14,7 @@ func (m *MiddlewareManager) Compress(next http.Handler) http.Handler {
 		if r.Header.Get(`Content-Encoding`) == `gzip` {
 			gz, err := gzip.NewReader(r.Body)
 			if err != nil {
+				logger.Log.Error("middlewares", "NewReader", err)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}

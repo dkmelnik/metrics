@@ -90,7 +90,11 @@ func Test_Send(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	go Send(ctx, sendPeriod, metricsChan, server.URL, nil)
+	cl, err := NewMetricsCollector(ctx, sendPeriod, "", metricsChan, server.URL, nil, 5)
+	if err != nil {
+		t.Error(err)
+	}
+	cl.SendMetricsPeriodically()
 
 	metricsChan <- md
 

@@ -57,29 +57,16 @@ func run() error {
 		}
 	}
 
-	dbName := "file:db.sqlite3?cache=shared"
-	connSQLITE, _ := db.NewSQLITEConnection(dbName)
-	if connSQLITE != nil {
-		defer connSQLITE.Close()
-		if err := migrateDatabase(
-			"sqlite3",
-			dbName,
-			"file://migrations/sqlite",
-		); err != nil {
-			return err
-		}
-	}
-
 	var store metrics.IRepository
 	if connPG != nil {
 		store, _ = storage.NewRepositoryStorage(connPG)
-	} else if connSQLITE != nil {
+	} else {
 		store, _ = storage.NewMemoryStorage(c.FileStoragePath, c.StoreInterval, c.Restore)
 	}
 
 	signer := sign.NewSign(c.Key)
 
-	r, err := metrics.ConfigureRouter(connPG, store, signer)
+	r, err := metrics.ConfigureRouter(c.PrivateKeyPath, connPG, store, signer)
 	if err != nil {
 		return err
 	}
