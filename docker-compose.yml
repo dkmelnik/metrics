@@ -36,6 +36,7 @@ services:
       - DATABASE_DSN=host=server_db port=5432 user=web dbname=local sslmode=disable password=web
       - KEY=some_key
       - CRYPTO_KEY=./cmd/certs/private_key.pem
+      - TRUSTED_SUBNET=172.19.0.0/16
     depends_on:
       - server_db
     ports:

@@ -9,6 +9,7 @@ import (
 )
 
 func ConfigureRouter(
+	trustedSubnet string,
 	privateKeyPath string,
 	pgDB *sqlx.DB,
 	storage IRepository,
@@ -19,11 +20,12 @@ func ConfigureRouter(
 	r.Use(logger.Log.RequestLog)
 
 	// infrastructure
-	m, err := middlewares.NewMiddlewareManager(privateKeyPath, signer)
+	m, err := middlewares.NewMiddlewareManager(trustedSubnet, privateKeyPath, signer)
 	if err != nil {
 		return nil, err
 	}
 	r.Use(m.Recovery)
+	r.Use(m.TrustedSubnet)
 
 	//metrics
 	service := NewService(storage)

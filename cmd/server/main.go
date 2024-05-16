@@ -66,7 +66,7 @@ func run() error {
 
 	signer := sign.NewSign(c.Key)
 
-	r, err := metrics.ConfigureRouter(c.PrivateKeyPath, connPG, store, signer)
+	r, err := metrics.ConfigureRouter(c.TrustedSubnet, c.PrivateKeyPath, connPG, store, signer)
 	if err != nil {
 		return err
 	}

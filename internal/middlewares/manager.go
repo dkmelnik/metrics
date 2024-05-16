@@ -10,12 +10,13 @@ import (
 )
 
 type MiddlewareManager struct {
-	privateKey *rsa.PrivateKey
-	sign       Signer
+	trustedSubnet string
+	privateKey    *rsa.PrivateKey
+	sign          Signer
 }
 
-func NewMiddlewareManager(privateKeyPath string, signer Signer) (*MiddlewareManager, error) {
-	mm := &MiddlewareManager{sign: signer}
+func NewMiddlewareManager(trustedSubnet string, privateKeyPath string, signer Signer) (*MiddlewareManager, error) {
+	mm := &MiddlewareManager{sign: signer, trustedSubnet: trustedSubnet}
 
 	mm.loadPrivateKey(privateKeyPath)
 

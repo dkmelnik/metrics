@@ -11,6 +11,7 @@ import (
 // Properties can be taken from environment variables or flags.
 type Server struct {
 	Addr            string `json:"addr"`
+	TrustedSubnet   string `json:"trusted_subnet"`
 	DBConnectStr    string `json:"db_connect_str"`
 	Mode            string `json:"mode"`
 	Level           string `json:"level"`
@@ -35,6 +36,7 @@ func NewServer() Server {
 func (c Server) setFlagValues() Server {
 	flag.StringVar(&c.configPath, "c", c.configPath, "path to configuration file")
 	flag.StringVar(&c.Addr, "a", "0.0.0.0:8080", "address in the form host:port. If empty, 0.0.0.0:8080 is used")
+	flag.StringVar(&c.TrustedSubnet, "t", "", "trusted subnet")
 	flag.StringVar(&c.DBConnectStr, "d", c.DBConnectStr, "Database Connection String")
 	flag.StringVar(&c.Mode, "m", "production", "app mode. If empty, production is used")
 	flag.StringVar(&c.Level, "l", "info", "logging level. If empty, warn is used")
@@ -76,6 +78,9 @@ func (c Server) setEnvValues() Server {
 	}
 	if envKey := os.Getenv("KEY"); envKey != "" {
 		c.Key = envKey
+	}
+	if envTrustedSubnet := os.Getenv("TRUSTED_SUBNET"); envTrustedSubnet != "" {
+		c.TrustedSubnet = envTrustedSubnet
 	}
 
 	return c
@@ -139,6 +144,10 @@ func (c Server) setFileValues() Server {
 
 	if c.Key == "" {
 		c.Key = config.Key
+	}
+
+	if c.TrustedSubnet == "" {
+		c.TrustedSubnet = config.TrustedSubnet
 	}
 
 	return c

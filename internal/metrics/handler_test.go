@@ -95,7 +95,7 @@ func Test_CreateOrUpdateByParams(t *testing.T) {
 		t.Error(err)
 	}
 
-	r, err := ConfigureRouter("", nil, store, nil)
+	r, err := ConfigureRouter("", "", nil, store, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -265,7 +265,7 @@ func Test_CreateOrUpdateByJSON(t *testing.T) {
 		t.Error(err)
 	}
 
-	r, err := ConfigureRouter("", nil, store, nil)
+	r, err := ConfigureRouter("", "", nil, store, nil)
 	if err != nil {
 		t.Error(err)
 	}

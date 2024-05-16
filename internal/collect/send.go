@@ -11,6 +11,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"reflect"
@@ -30,6 +31,7 @@ type MetricsCollector struct {
 	serverURL string
 	signer    Signer
 	limit     int
+	ip        net.IP
 }
 
 type workPayload struct {
@@ -58,8 +60,24 @@ func NewMetricsCollector(
 	}
 
 	mc.loadPublicKey(publicKeyPath)
+	ip, err := mc.getOutboundIP()
+	if err == nil {
+		mc.ip = ip
+	}
 
 	return mc, nil
+}
+
+func (mc *MetricsCollector) getOutboundIP() (net.IP, error) {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddr.IP, nil
 }
 
 // SendMetricsPeriodically периодически отправляет метрики на сервер.
@@ -150,26 +168,24 @@ func (mc *MetricsCollector) sendMetricRequest(url string, body []byte, hash stri
 		"Content-Encoding": "gzip",
 	}
 
+	if mc.ip != nil {
+		header["X-Real-IP"] = mc.ip.String()
+	}
+
 	if hash != "" {
 		header["HashSHA256"] = hash
 	}
 
-	resp, err := client.R().
+	resp, _ := client.R().
 		SetHeaders(header).
 		SetBody(body).
 		Post(fmt.Sprintf("%s/update/", url))
-
-	if err != nil {
-		logger.Log.Error("sendMetricRequest", "err", err.Error(), "body", string(body))
-		return
-	}
 
 	if resp.StatusCode() != http.StatusOK {
 		logger.Log.Error(
 			"sendMetricRequest",
 			"err", "status not ok",
-			"body", string(body),
-			"resp", string(resp.Body()),
+			"ip", mc.ip,
 			"code", resp.StatusCode(),
 		)
 	}
