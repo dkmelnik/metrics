@@ -10,6 +10,7 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"github.com/dkmelnik/metrics/internal/apperrors"
+	"github.com/dkmelnik/metrics/internal/metrics"
 	"github.com/dkmelnik/metrics/internal/metrics/dto"
 	"github.com/dkmelnik/metrics/internal/models"
 )
@@ -17,11 +18,11 @@ import (
 // Handler is an HTTP handler for handling requests related to metrics.
 type Handler struct {
 	pgDB    *sqlx.DB
-	service *Service
+	service *metrics.Service
 }
 
 // NewHandler creates a new instance of Handler.
-func NewHandler(pgDB *sqlx.DB, s *Service) *Handler {
+func NewHandler(pgDB *sqlx.DB, s *metrics.Service) *Handler {
 	return &Handler{pgDB, s}
 }
 

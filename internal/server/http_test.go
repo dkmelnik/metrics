@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"testing"
 	"time"
@@ -14,13 +13,10 @@ func TestServer_Run(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	server := NewServer(addr, handler)
+	server := NewHTTPServer(addr, handler)
 
 	go func() {
-		err := server.Run()
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			t.Errorf("server.Run() returned an unexpected error: %v", err)
-		}
+		server.Run()
 	}()
 
 	// Ждем некоторое время, чтобы сервер успел запуститься

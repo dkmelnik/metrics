@@ -1,10 +1,12 @@
-package metrics
+package http
 
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
 
+	"github.com/dkmelnik/metrics/internal/delivery/http/metrics"
 	"github.com/dkmelnik/metrics/internal/logger"
+	metrics2 "github.com/dkmelnik/metrics/internal/metrics"
 	"github.com/dkmelnik/metrics/internal/middlewares"
 )
 
@@ -12,7 +14,7 @@ func ConfigureRouter(
 	trustedSubnet string,
 	privateKeyPath string,
 	pgDB *sqlx.DB,
-	storage IRepository,
+	storage metrics2.IRepository,
 	signer middlewares.Signer,
 ) (*chi.Mux, error) {
 	r := chi.NewRouter()
@@ -28,8 +30,8 @@ func ConfigureRouter(
 	r.Use(m.TrustedSubnet)
 
 	//metrics
-	service := NewService(storage)
-	metricsHandler := NewHandler(pgDB, service)
+	service := metrics2.NewService(storage)
+	metricsHandler := metrics.NewHandler(pgDB, service)
 
 	r.Post("/update/{type}/{name}/{value}", metricsHandler.CreateOrUpdateByParams)
 

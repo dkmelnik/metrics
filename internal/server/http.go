@@ -9,12 +9,12 @@ import (
 	"time"
 )
 
-type Server struct {
+type HTTPServer struct {
 	app *http.Server
 }
 
-func NewServer(addr string, r http.Handler) *Server {
-	return &Server{app: &http.Server{
+func NewHTTPServer(addr string, r http.Handler) *HTTPServer {
+	return &HTTPServer{app: &http.Server{
 		Addr:         addr,
 		ReadTimeout:  time.Second * 30,
 		Handler:      r,
@@ -22,7 +22,7 @@ func NewServer(addr string, r http.Handler) *Server {
 	}}
 }
 
-func (s *Server) Run() error {
+func (s *HTTPServer) Run() {
 	serverCtx, serverStopCtx := context.WithCancel(context.Background())
 
 	sig := make(chan os.Signal, 1)
@@ -36,5 +36,10 @@ func (s *Server) Run() error {
 		serverStopCtx()
 	}()
 
-	return s.app.ListenAndServe()
+	go func() {
+		err := s.app.ListenAndServe()
+		if err != nil {
+			panic(err)
+		}
+	}()
 }

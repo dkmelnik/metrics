@@ -1,23 +1,23 @@
 version: "3.4"
 
 services:
-  agent:
-    container_name: agent
-    build:
-      context: .
-      dockerfile: docker/Dockerfile-agent
-      target: production
-    environment:
-      - TZ=Europe/Moscow
-      - LOG_LEVEL=info
-      - APP_MODE=production
-      - ADDRESS=http://server:8080
-      - REPORT_INTERVAL=10
-      - POLL_INTERVAL=2
-      - KEY=some_key
-      - CRYPTO_KEY=./cmd/certs/public_key.pem
-    ports:
-      - "80:8080"
+#  agent:
+#    container_name: agent
+#    build:
+#      context: .
+#      dockerfile: docker/Dockerfile-agent
+#      target: production
+#    environment:
+#      - TZ=Europe/Moscow
+#      - LOG_LEVEL=info
+#      - APP_MODE=production
+#      - ADDRESS=http://server:8080
+#      - REPORT_INTERVAL=10
+#      - POLL_INTERVAL=2
+#      - KEY=some_key
+#      - CRYPTO_KEY=./cmd/certs/public_key.pem
+#    ports:
+#      - "80:8080"
 
   server:
     container_name: server
