@@ -47,10 +47,10 @@ func (s *GRPCServer) Run() error {
 	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGTSTP)
 	go func() {
 		<-sig
-		logger.Log.Info("server", "stop serve addr", s.addr)
+		logger.Log.Info("grpc server", "stop serve addr", s.addr)
 		s.app.Stop()
 	}()
-	logger.Log.Info("server", "serve addr", s.addr)
+	logger.Log.Info("grpc server", "serve addr", s.addr)
 	return s.app.Serve(listener)
 }
 

@@ -13,6 +13,7 @@ import (
 
 	"github.com/dkmelnik/metrics/configs"
 	"github.com/dkmelnik/metrics/internal/db"
+	"github.com/dkmelnik/metrics/internal/delivery/grpc"
 	"github.com/dkmelnik/metrics/internal/delivery/http"
 	"github.com/dkmelnik/metrics/internal/logger"
 	"github.com/dkmelnik/metrics/internal/metrics"
@@ -81,8 +82,16 @@ func run() error {
 		"buildDate", buildDate,
 		"buildCommit", buildCommit,
 	)
+	grpcsvr, err := server.NewGRPCServer(":5300")
+	if err != nil {
+		return err
+	}
 
-	return nil
+	if err = grpc.ConfigureRouter(grpcsvr.GetApp(), connPG, store); err != nil {
+		return err
+	}
+
+	return grpcsvr.Run()
 }
 
 func migrateDatabase(driverName, connStr, migrationPath string) error {
