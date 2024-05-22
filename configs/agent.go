@@ -10,6 +10,7 @@ import (
 // Agent stores properties that configure the agent service.
 // Properties can be taken from environment variables or flags.
 type Agent struct {
+	GRPCAddr       string `json:"grpc_addr"`
 	Addr           string `json:"addr"`
 	Mode           string `json:"mode"`
 	Level          string `json:"level"`
@@ -48,6 +49,7 @@ func (c Agent) setFlagValues() Agent {
 
 // setEnvValues sets configuration values from environment variables.
 func (c Agent) setEnvValues() Agent {
+	setEnvString(&c.GRPCAddr, "GRPC_ADDRESS")
 	setEnvString(&c.Addr, "ADDRESS")
 	setEnvString(&c.Mode, "APP_MODE")
 	setEnvString(&c.Level, "LOG_LEVEL")

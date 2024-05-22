@@ -6,23 +6,23 @@ import (
 
 	"github.com/dkmelnik/metrics/internal/delivery/http/metrics"
 	"github.com/dkmelnik/metrics/internal/logger"
-	metrics2 "github.com/dkmelnik/metrics/internal/metrics"
-	"github.com/dkmelnik/metrics/internal/middlewares"
+	storage "github.com/dkmelnik/metrics/internal/metrics"
+	"github.com/dkmelnik/metrics/internal/middlewares/http"
 )
 
 func ConfigureRouter(
 	trustedSubnet string,
 	privateKeyPath string,
 	pgDB *sqlx.DB,
-	storage metrics2.IRepository,
-	signer middlewares.Signer,
+	repo storage.IRepository,
+	signer http.Signer,
 ) (*chi.Mux, error) {
 	r := chi.NewRouter()
 
 	r.Use(logger.Log.RequestLog)
 
 	// infrastructure
-	m, err := middlewares.NewMiddlewareManager(trustedSubnet, privateKeyPath, signer)
+	m, err := http.NewMiddlewareManager(trustedSubnet, privateKeyPath, signer)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +30,7 @@ func ConfigureRouter(
 	r.Use(m.TrustedSubnet)
 
 	//metrics
-	service := metrics2.NewService(storage)
+	service := storage.NewService(repo)
 	metricsHandler := metrics.NewHandler(pgDB, service)
 
 	r.Post("/update/{type}/{name}/{value}", metricsHandler.CreateOrUpdateByParams)

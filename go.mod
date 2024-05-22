@@ -7,6 +7,7 @@ require (
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-resty/resty/v2 v2.12.0
 	github.com/golang-migrate/migrate/v4 v4.17.0
+	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa
 	github.com/jackc/pgx/v5 v5.3.1
 	github.com/jmoiron/sqlx v1.3.5

@@ -6,12 +6,11 @@ import (
 	"os/signal"
 	"syscall"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
+	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"google.golang.org/grpc"
 
 	"github.com/dkmelnik/metrics/internal/logger"
+	grpc2 "github.com/dkmelnik/metrics/internal/middlewares/grpc"
 )
 
 type GRPCServer struct {
@@ -19,17 +18,21 @@ type GRPCServer struct {
 	app  *grpc.Server
 }
 
-func recoveryHandler(p interface{}) error {
-	logger.Log.Error("server:GRPCServer", "Panic occurred:", p)
-	return status.Errorf(codes.Internal, "Internal server error")
-}
-
-func NewGRPCServer(addr string) (*GRPCServer, error) {
+func NewGRPCServer(addr string, subnet, pkey string, signer grpc2.Signer) (*GRPCServer, error) {
+	mm, err := grpc2.NewMiddlewareManager(subnet, pkey, signer)
+	if err != nil {
+		return nil, err
+	}
 	grpcServer := grpc.NewServer(
 
-		grpc.ChainStreamInterceptor(),
-
-		grpc.ChainUnaryInterceptor(),
+		grpc.UnaryInterceptor(
+			grpcmiddleware.ChainUnaryServer(
+				mm.Recovery(),
+				mm.TrustedSubnet(),
+				mm.Decryption(),
+				mm.Compress(),
+			),
+		),
 	)
 
 	return &GRPCServer{
@@ -51,7 +54,16 @@ func (s *GRPCServer) Run() error {
 		s.app.Stop()
 	}()
 	logger.Log.Info("grpc server", "serve addr", s.addr)
-	return s.app.Serve(listener)
+
+	go func() {
+		err := s.app.Serve(listener)
+		if err != nil {
+			logger.Log.Error("error starting grpc server", "serve addr", s.addr)
+			return
+		}
+	}()
+
+	return nil
 }
 
 func (s *GRPCServer) GetApp() *grpc.Server {

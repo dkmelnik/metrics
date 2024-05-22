@@ -10,6 +10,7 @@ import (
 // Server stores properties that configure the server.
 // Properties can be taken from environment variables or flags.
 type Server struct {
+	GRPCAddr        string `json:"grpc_addr"`
 	Addr            string `json:"addr"`
 	TrustedSubnet   string `json:"trusted_subnet"`
 	DBConnectStr    string `json:"db_connect_str"`
@@ -52,6 +53,9 @@ func (c Server) setFlagValues() Server {
 
 // setEnvValues sets configuration values from environment variables.
 func (c Server) setEnvValues() Server {
+	if grpcAddr := os.Getenv("GRPC_ADDRESS"); grpcAddr != "" {
+		c.GRPCAddr = grpcAddr
+	}
 	if envAddr := os.Getenv("ADDRESS"); envAddr != "" {
 		c.Addr = envAddr
 	}
