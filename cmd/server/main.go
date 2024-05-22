@@ -82,7 +82,7 @@ func run() error {
 		"buildDate", buildDate,
 		"buildCommit", buildCommit,
 	)
-	grpcsvr, err := server.NewGRPCServer(":5300")
+	grpcsvr, err := server.NewGRPCServer(c.GRPCAddr, c.TrustedSubnet, c.PrivateKeyPath, signer)
 	if err != nil {
 		return err
 	}
