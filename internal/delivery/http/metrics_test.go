@@ -1,4 +1,4 @@
-package metrics
+package http
 
 import (
 	"bytes"
@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	http2 "github.com/dkmelnik/metrics/internal/delivery/http"
 	"github.com/dkmelnik/metrics/internal/metrics"
 	"github.com/dkmelnik/metrics/internal/metrics/mock"
 	"github.com/dkmelnik/metrics/internal/storage"
@@ -97,7 +96,7 @@ func Test_CreateOrUpdateByParams(t *testing.T) {
 		t.Error(err)
 	}
 
-	r, err := http2.ConfigureRouter("", "", nil, store, nil)
+	r, err := ConfigureRouter("", "", nil, store, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -267,7 +266,7 @@ func Test_CreateOrUpdateByJSON(t *testing.T) {
 		t.Error(err)
 	}
 
-	r, err := http2.ConfigureRouter("", "", nil, store, nil)
+	r, err := ConfigureRouter("", "", nil, store, nil)
 	if err != nil {
 		t.Error(err)
 	}

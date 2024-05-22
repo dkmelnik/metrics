@@ -4,7 +4,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
 
-	"github.com/dkmelnik/metrics/internal/delivery/http/metrics"
 	"github.com/dkmelnik/metrics/internal/logger"
 	storage "github.com/dkmelnik/metrics/internal/metrics"
 	"github.com/dkmelnik/metrics/internal/middlewares/http"
@@ -31,7 +30,7 @@ func ConfigureRouter(
 
 	//metrics
 	service := storage.NewService(repo)
-	metricsHandler := metrics.NewHandler(pgDB, service)
+	metricsHandler := NewHandler(pgDB, service)
 
 	r.Post("/update/{type}/{name}/{value}", metricsHandler.CreateOrUpdateByParams)
 
