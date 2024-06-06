@@ -23,6 +23,11 @@ migrate.create:
 migrate.lite.create:
 	docker-compose exec server migrate create -tz Europe/Moscow -ext sql -dir ./migrations/sqlite ${name}
 
+proto.gen:
+	protoc \
+		--go_out=. --go_opt=paths=source_relative \
+        --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+        proto/metrics/metrics.proto
 
 
 

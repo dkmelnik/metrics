@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package metrics;
+
+option go_package = "github.com/dkmelnik/metrics/proto/metrics";
+
+
+service Metrics {
+  rpc Create(CreateRequest) returns (CreateResponse);
+  rpc CreateMany(CreateManyRequest) returns (CreateManyResponse);
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc List(ListRequest) returns (ListResponse);
+  rpc CheckPGSQL(CheckPGSQLRequest) returns (CheckPGSQLResponse);
+}
+
+message CreateRequest {
+  string id = 1;
+  string mtype = 2;
+  int64 delta = 3;
+  double value = 4;
+}
+
+message CreateResponse {
+  string id = 1;
+  string mtype = 2;
+  int64 delta = 3;
+  double value = 4;
+}
+
+message CreateManyRequest{
+  repeated CreateRequest metrics = 1;
+}
+
+message CreateManyResponse{
+  repeated CreateResponse metrics = 1;
+}
+
+message GetRequest{
+  string id = 1;
+  string mtype = 2;
+}
+
+message GetResponse{
+  string id = 1;
+  string mtype = 2;
+  int64 delta = 3;
+  double value = 4;
+}
+
+message ListRequest{
+}
+
+message ListResponse{
+  string html = 1;
+}
+
+message CheckPGSQLRequest{
+}
+message CheckPGSQLResponse{
+}

@@ -13,6 +13,8 @@ import (
 
 	"github.com/dkmelnik/metrics/configs"
 	"github.com/dkmelnik/metrics/internal/db"
+	"github.com/dkmelnik/metrics/internal/delivery/grpc"
+	"github.com/dkmelnik/metrics/internal/delivery/http"
 	"github.com/dkmelnik/metrics/internal/logger"
 	"github.com/dkmelnik/metrics/internal/metrics"
 	"github.com/dkmelnik/metrics/internal/server"
@@ -66,12 +68,12 @@ func run() error {
 
 	signer := sign.NewSign(c.Key)
 
-	r, err := metrics.ConfigureRouter(c.PrivateKeyPath, connPG, store, signer)
+	r, err := http.ConfigureRouter(c.TrustedSubnet, c.PrivateKeyPath, connPG, store, signer)
 	if err != nil {
 		return err
 	}
 
-	s := server.NewServer(c.Addr, r)
+	server.NewHTTPServer(c.Addr, r).Run()
 
 	logger.Log.Info("SERVER LISTEN AND SERVE",
 		"addr", c.Addr,
@@ -80,11 +82,16 @@ func run() error {
 		"buildDate", buildDate,
 		"buildCommit", buildCommit,
 	)
-	if err = s.Run(); err != nil {
+	grpcsvr, err := server.NewGRPCServer(c.GRPCAddr, c.TrustedSubnet, c.PrivateKeyPath, signer)
+	if err != nil {
 		return err
 	}
 
-	return nil
+	if err = grpc.ConfigureRouter(grpcsvr.GetApp(), connPG, store); err != nil {
+		return err
+	}
+
+	return grpcsvr.Run()
 }
 
 func migrateDatabase(driverName, connStr, migrationPath string) error {

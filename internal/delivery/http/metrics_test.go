@@ -1,4 +1,4 @@
-package metrics
+package http
 
 import (
 	"bytes"
@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/dkmelnik/metrics/internal/metrics"
 	"github.com/dkmelnik/metrics/internal/metrics/mock"
 	"github.com/dkmelnik/metrics/internal/storage"
 )
@@ -95,7 +96,7 @@ func Test_CreateOrUpdateByParams(t *testing.T) {
 		t.Error(err)
 	}
 
-	r, err := ConfigureRouter("", nil, store, nil)
+	r, err := ConfigureRouter("", "", nil, store, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -265,7 +266,7 @@ func Test_CreateOrUpdateByJSON(t *testing.T) {
 		t.Error(err)
 	}
 
-	r, err := ConfigureRouter("", nil, store, nil)
+	r, err := ConfigureRouter("", "", nil, store, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -397,7 +398,7 @@ func Test_GetMetricValue(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	sr := NewService(st)
+	sr := metrics.NewService(st)
 	h := NewHandler(nil, sr)
 
 	r.Get("/value/{type}/{name}", h.GetMetricValue)
@@ -509,7 +510,7 @@ func Test_GetMetric(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	sr := NewService(st)
+	sr := metrics.NewService(st)
 	h := NewHandler(nil, sr)
 
 	r.Post("/value/", h.GetMetric)
@@ -540,7 +541,7 @@ func Test_GetAllMetrics(t *testing.T) {
 		t.Error(err)
 	}
 
-	sr := NewService(st)
+	sr := metrics.NewService(st)
 	h := NewHandler(nil, sr)
 
 	r.Get("/", h.GetAllMetrics)
@@ -560,7 +561,7 @@ func Test_GetAllMetrics(t *testing.T) {
 
 func ExampleHandler_CreateOrUpdateByParams() {
 	store, _ := storage.NewMemoryStorage("", 0, false) // Instantiate your storage.
-	service := NewService(store)                       // Instantiate your service.
+	service := metrics.NewService(store)               // Instantiate your service.
 	handler := NewHandler(nil, service)                // Instantiate your handler.
 
 	// Create a new HTTP request with query params.
@@ -579,7 +580,7 @@ func ExampleHandler_CreateOrUpdateByParams() {
 
 func ExampleHandler_CreateOrUpdateByJSON() {
 	store, _ := storage.NewMemoryStorage("", 0, false) // Instantiate your storage.
-	service := NewService(store)                       // Instantiate your service.
+	service := metrics.NewService(store)               // Instantiate your service.
 	handler := NewHandler(nil, service)                // Instantiate your handler.
 
 	// Example 1: Mocking a successful JSON request
@@ -601,7 +602,7 @@ func ExampleHandler_CreateOrUpdateByJSON() {
 
 func ExampleHandler_CreateOrUpdateMany() {
 	store, _ := storage.NewMemoryStorage("", 0, false) // Instantiate your storage.
-	service := NewService(store)                       // Instantiate your service.
+	service := metrics.NewService(store)               // Instantiate your service.
 	handler := NewHandler(nil, service)                // Instantiate your handler.
 
 	// Example 1: Mocking a successful JSON request with multiple metrics
@@ -623,7 +624,7 @@ func ExampleHandler_CreateOrUpdateMany() {
 
 func ExampleHandler_GetMetric() {
 	store, _ := storage.NewMemoryStorage("", 0, false) // Instantiate your storage.
-	service := NewService(store)                       // Instantiate your service.
+	service := metrics.NewService(store)               // Instantiate your service.
 	handler := NewHandler(nil, service)                // Instantiate your handler.
 
 	// Example 1: Mocking a successful request to get a metric
@@ -645,7 +646,7 @@ func ExampleHandler_GetMetric() {
 
 func ExampleHandler_GetMetricValue() {
 	store, _ := storage.NewMemoryStorage("", 0, false) // Instantiate your storage.
-	service := NewService(store)                       // Instantiate your service.
+	service := metrics.NewService(store)               // Instantiate your service.
 	handler := NewHandler(nil, service)                // Instantiate your handler.
 
 	// Example 1: Mocking a successful request to get a metric value
@@ -663,7 +664,7 @@ func ExampleHandler_GetMetricValue() {
 
 func ExampleHandler_GetAllMetrics() {
 	store, _ := storage.NewMemoryStorage("", 0, false) // Instantiate your storage.
-	service := NewService(store)                       // Instantiate your service.
+	service := metrics.NewService(store)               // Instantiate your service.
 	handler := NewHandler(nil, service)                // Instantiate your handler.
 
 	// Example 1: Mocking a successful request to get all metrics in HTML format

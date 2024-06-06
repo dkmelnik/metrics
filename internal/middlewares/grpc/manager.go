@@ -1,4 +1,4 @@
-package middlewares
+package grpc
 
 import (
 	"crypto/rsa"
@@ -9,15 +9,23 @@ import (
 	"os"
 )
 
-type MiddlewareManager struct {
-	privateKey *rsa.PrivateKey
-	sign       Signer
+type Signer interface {
+	Equal(sign string, data []byte) bool
 }
 
-func NewMiddlewareManager(privateKeyPath string, signer Signer) (*MiddlewareManager, error) {
-	mm := &MiddlewareManager{sign: signer}
+type MiddlewareManager struct {
+	trustedSubnet string
+	privateKey    *rsa.PrivateKey
+	sign          Signer
+}
 
-	mm.loadPrivateKey(privateKeyPath)
+func NewMiddlewareManager(trustedSubnet string, privateKeyPath string, signer Signer) (*MiddlewareManager, error) {
+	mm := &MiddlewareManager{sign: signer, trustedSubnet: trustedSubnet}
+
+	err := mm.loadPrivateKey(privateKeyPath)
+	if err != nil {
+		return nil, err
+	}
 
 	return mm, nil
 }
